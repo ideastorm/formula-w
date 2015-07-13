@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<!--
+Copyright 2015 Phillip Hayward <phil@pjhayward.net>.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<html>
+  <head>
+    <title>Design Notes</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  </head>
+  <body>
+		<div>
+			<h3>Game Info</h3>
+			<p>Each running game will need to track which board it's using, and the current state of all players.</p>
+			<h4>Boards</h4>
+			<ul>
+				<li>Multiple boards must be available</li>
+				<li>Each board should provide images for rendering</li>
+				<li>The board should have a record of all spaces
+					<ul>
+						<li>Each space should reference the other spaces accessible from that space.</li>
+						<li>accessible space references should be referred to as in, forward, and out. This will be used to ensure that available moves comply with lane traversal rules.</li>
+						<li>Corner spaces will be flagged so that it can be determined whether a player finished a turn in a corner</li>
+						<li>Pit stop spaces will also be specially marked so the system can determine if repairs should be made</li>
+					</ul>
+				</li>
+				<li>The board will also have a record of each corner, which will include the shortest and longest path counts for the corner and the number of stops required in that corner.</li>
+			</ul>
+			<h4>Players</h4>
+			<ul>
+				<li>Each player will choose a unique car</li>
+				<li>Each player record will track the current gear and damage</li>
+				<li>Advanced games will track damage per vehicle component</li>
+				<li>if any damage category reaches maximum, the player loses.</li>
+			</ul>
+			<h4>Vehicles</h4>
+			<ul>
+				<li>Vehicles will provide images for display</li>
+				<li>Each vehicle will allow 20 combined damage points for basic play</li>
+				<li>For advanced play, vehicles may distribute 40 damage points as the player chooses across the following categories:
+					<ul>
+						<li>Engine (default: 6 DP)</li>
+						<li>Transmission (default: 6 DP)</li>
+						<li>Tires (default: 10 DP)</li>
+						<li>Brakes (default: 6 DP)</li>
+						<li>Suspension (default: 6 DP)</li>
+						<li>Body (default: 6 DP)</li>
+					</ul>
+				</li>
+			</ul>
+			<h4>Taking damage</h4>
+			<p>This is a summary of the cases where damage may be taken, for each component of the vehicle.
+				When playing with basic rules, all damage is applied to the overall vehicle damage points</p>
+			<ul>
+				<li>Engine
+					<ul>
+						<li>ALL players in 5th or 6th gear have a 20% chance of damage (determined individually) if ANY PLAYER rolls 20 spaces in 5th gear or 30 spaces in 6th gear.</li>
+						<li>The space where damage is taken becomes dangerous.</li>
+						<li>Losing all DP results in elimination</li>
+					</ul>
+				</li>
+				<li>Transmission
+					<ul>
+						<li>N-1 damage is taken for down shifting by N gears.</li>
+					</ul>
+				</li>
+				<li>Tires
+					<ul>
+						<li>Up to 3 damage for braking</li>
+						<li>1 DP for each space on overshooting a corner</li>
+					</ul>
+				</li>
+				<li>Brakes
+					<ul>
+						<li>Up to 3 damage for braking</li>
+					</ul>
+				</li>
+				<li>Suspension
+					<ul>
+						<li>5% chance of damage on passing over or landing on a dangerous space.</li>
+						<li>Losing all suspension DP results in elimination</li>
+					</ul>
+				</li>
+				<li>Body
+					<ul>
+						<li>Players have a 20% chance of damage when immediately adjacent to another vehicle at the end of movement for either vehicle.
+							This damage will be applied prior to the slipstream rule, if applicable.  This rule should be applied for each adjacent vehicle.</li>
+						<li>The space where damage is taken becomes dangerous.</li>
+						<li>Losing all body DP results in elimination</li>
+						<li></li>
+					</ul>
+				</li>
+			</ul>
+			<h4>Gameplay</h4>
+			<ul>
+				<li>Players will take turns moving their vehicles
+					<ul>
+						<li>The vehicle in the lead will move first, while the vehicle trailing will move last.</li>
+						<li>Inside track spaces will be considered ahead of spaces farther out.</li>
+					</ul>
+				</li>
+				<li>For each turn, the player must select the gear they wish to use
+					<ul>
+						<li>Players may shift up by one gear.</li>
+						<li>Players may shift down by one gear without taking damage</li>
+						<li>If a player down shifts by N gears, they will take N-1 damage points.
+							<ul>
+								<li>In advanced play, damage is applied to the transmission.</li>
+							</ul>
+						</li>
+						<li>If a player has no damage points available, they cannot shift down by more than one gear</li>
+					</ul>
+				</li>
+				<li>After selecting a gear, the system will randomly select the number of movement points for the player on this turn.  The distribution of the random numbers will depend
+					on the random implementation used, and is not guaranteed.
+					<ul>
+						<li>1st gear: 1-2 movement points</li>
+						<li>2nd gear: 2-4 movement points</li>
+						<li>3rd gear: 4-8 movement points</li>
+						<li>4th gear: 7-12 movement points</li>
+						<li>5th gear: 11-20 movement points</li>
+						<li>6th gear: 19-30 movement points</li>
+					</ul>
+				</li>
+				<li>Once the number of movement points has been determined, the player will be presented with a choice of which space to move to.
+					<ul>
+						<li>Players may elect to use up to 6 damage points to reduce the distance traveled
+							<ul>
+								<li>Decrease spaces to move (not necessarily movement points, see Hills below) by 1 for each DP taken.</li>
+								<li>For advanced play: the first three DP apply to brakes, the second three DP apply to tires.</li>
+								<li>Braking by 7+ spaces will destroy the vehicle, regardless of available DP</li>
+								<li>If insufficient DP are available, the car is destroyed.</li>
+							</ul>
+						</li>
+						<li>Players cannot drive through other vehicles.  They must drive around them or brake to avoid hitting them.</li>
+						<li>If the road is blocked by other vehicles, players must brake.</li>
+						<li></li>
+					</ul>
+				</li>
+				<li>When driving through a straight, players may only traverse lanes in one direction.
+					<ul>
+						<li>Weaving back and forth is not permitted.</li>
+						<li>Players may move over one lane, then immediately back to pass another vehicle.</li>
+						<li>Two-way lane traversal in corners is permitted as long as the movement follows the allowed movements for the corner space.</li>
+					</ul>
+				</li>
+				<li>Each corner has a number indicating how many times a player must finish moving while in that corner.
+					<ul>
+						<li>Overshooting the corner on the final stop results in damage to tires.</li>
+						<li>Overshooting the corner prior to the final stop destroys the car.</li>
+						<li>If a vehicle loses all tire DP from overshooting, the car spins out - place it backwards on the space.
+							<ul>
+								<li>On the next turn, return the car to the forward direction, and start driving in 1st gear.</li>
+							</ul>
+						</li>
+						<li>If all tire DP are gone, overshooting by 1 causes the car to spin out. (see above)</li>
+						<li>Overshooting by more than the available tire DP destroys the car.</li>
+					</ul>
+				</li>
+				<li>Any time a car is destroyed, the space where the movement ended is marked as dangerous.</li>
+				<li>For advanced play, if a player ends a move immediately behind another vehicle, and both vehicles are in 4th gear or higher, the player in the rear
+					is in the slipstream of player in front, and may optionally move three additional spaces.
+					<ul>
+						<li>Players may use braking to reduce the number of spaces moved.</li>
+						<li>Normal movement rules apply.</li>
+						<li>If the movement from slipstream rules results in ending immediately behind another player in 4th gear or higher, the slipstream rule is applied again.</li>
+					</ul>
+				</li>
+			</ul>
+			<h4>Hills</h4>
+			<p>higher gears require more movement points to traverse (1 pt for 1st and 2nd, 2pt for 3rd and 4th, 3pt for 5th and 6th)</p>
+			<h4>Pit Stops</h4>
+			<ul>
+				<li>Players must have movement points equal to or higher than the distance to the pit to make use of a pit stop.</li>
+				<li>Excess movement points are discarded with no penalty</li>
+				<li>All tire damage is repaired.</li>
+				<li>On the turn after the pit stop: 50/50 chance of a quick stop or a slow stop.</li>
+				<li>For a quick pit stop
+					<ul>
+						<li>Leave the pit in 4th gear<li>
+						<li>Even chances of moving between 1 and 5 spaces when exiting (replaces normal movement)</li>
+					</ul>
+				</li>
+				<li>For a slow pit stop
+					<ul>
+						<li>Skip one turn</li>
+						<li>Leave the pit in 4th gear or lower (normal movement applies)</li>
+					</ul>
+				</li>
+				<!--<li></li>
+				<li></li>
+				<li></li>-->
+			</ul>
+		</div>
+  </body>
+</html>
