@@ -24,6 +24,8 @@ limitations under the License.
 		<div>
 			<h3>Game Info</h3>
 			<p>Each running game will need to track which board it's using, and the current state of all players.</p>
+			<p>I anticipate that we'll have a node app running the server, which will also serve up the client HTML5 app as static content.
+				Communication will likely be done via websockets.  I would establish a channel for the game browser, and a separate channel for each game.</p>
 			<h4>Boards</h4>
 			<ul>
 				<li>Multiple boards must be available</li>
@@ -154,6 +156,7 @@ limitations under the License.
 						<li>Weaving back and forth is not permitted.</li>
 						<li>Players may move over one lane, then immediately back to pass another vehicle.</li>
 						<li>Two-way lane traversal in corners is permitted as long as the movement follows the allowed movements for the corner space.</li>
+						<li>This will require that we track what lanes a car has been in (except when passing) for each straight</li>
 					</ul>
 				</li>
 				<li>Each corner has a number indicating how many times a player must finish moving while in that corner.
