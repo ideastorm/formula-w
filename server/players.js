@@ -14,9 +14,4 @@
  * limitations under the License.
  */
 
-module.exports = {
-	registerRoutes: function (app) {
-		app.get("")
-	}
-};
-
+'use strict';
