@@ -1,75 +1,63 @@
 'use strict';
 
 var FamousEngine = require('famous/core/FamousEngine');
-var Mesh = require('famous/webgl-renderables/Mesh');
-var Color = require('famous/utilities/Color');
-var Camera = require('famous/components/Camera');
-var PointLight = require('famous/webgl-renderables/lights/PointLight');
-var OBJLoader = require('famous/webgl-geometries/OBJLoader');
-var Geometry = require('famous/webgl-geometries/Geometry');
-
-var scene = FamousEngine.createScene('body');
+var Node = require('famous/core/Node');
+var Header = require('./Header');
+var Browser = require('./Browser');
+var Runtime = require('./Runtime');
+var WaitingRoom = require('./WaitingRoom');
 
 FamousEngine.init();
 
-var camera = new Camera(scene)
-				.setDepth(1000);
 
-var meshNode = scene.addChild()
-				.setOrigin(0.5, 0.5, 0.5)
-				.setAlign(0.5, 0.5, 0.5)
-				.setMountPoint(0.5, 0.5, 0.5)
-				.setSizeMode(1, 1, 1)
-				.setAbsoluteSize(200, 200, 200);
+function App() {
+	Node.call(this);
 
-OBJLoader.load("models/bishopAbstractChessSet.obj", function (geometries) {
-	console.log(geometries);
-	for (var i = 0; i < geometries.length; i++) {
-		var buffers = geometries[i];
-		console.log(buffers);
+	var headerHeight = 30;
 
-		var geometry = new Geometry({
-			buffers: [
-				{name: 'a_pos', data: buffers.vertices, size: 3},
-//				{name: 'a_normals', data: buffers.normals, size: 3},
-//				{name: 'a_texCoords', data: buffers.textureCoords, size: 2},
-				{name: 'indices', data: buffers.indices, size: 3}
-			]
-		});
+	var transitions = {
+		joinGame: function joinGame(gameName) {
+			alert('joining game ' + gameName);
+		},
+		leaveGame: function leaveGame() {
+			alert('leaving game');
+		}
+	};
 
-		var pieceNode = meshNode.addChild();
-		var mesh = new Mesh(pieceNode)
-						.setGeometry(geometry);
-	}
-});
+	new Header(this.addChild()
+					.setSizeMode('relative', 'absolute', 'absolute')
+					.setAbsoluteSize(1, headerHeight, 1)
+					.setProportionalSize(1, 1, 1));
 
-var lightNode = scene.addChild()
-				.setAlign(0.5, 0.5, 0.5)
-				.setPosition(0, 0, 250);
+	this.addChild()
+					.setSizeMode('relative', 'relative', 'relative')
+					.setProportionalSize(1, 1, 1)
+					.setDifferentialSize(0, -headerHeight, 0)
+					.setPosition(0, headerHeight, 0).addChild(new Browser(transitions));
 
-var light = new PointLight(lightNode)
-				.setColor(new Color('white'));
+	new Runtime(this.addChild()
+					.setSizeMode('relative', 'relative', 'relative')
+					.setProportionalSize(1, 1, 1)
+					.setDifferentialSize(0, -headerHeight, 0)
+					.setAlign(-1, 0, 0)
+					.setPosition(0, headerHeight, 0), transitions);
 
-var lightNode1 = scene.addChild()
-				.setAlign(0.5, 0.5, 0.5)
-				.setPosition(0, 250);
+	new WaitingRoom(this.addChild()
+					.setSizeMode('relative', 'relative', 'relative')
+					.setProportionalSize(1, 1, 1)
+					.setDifferentialSize(0, -headerHeight, 0)
+					.setAlign(-1, 0, 0)
+					.setPosition(0, headerHeight, 0), transitions);
+}
 
-var light1 = new PointLight(lightNode1)
-				.setColor(new Color('red'));
+App.prototype = Object.create(Node.prototype);
 
+App.prototype.onReceive = function (event, payload) {
+	console.log(event);
+};
 
-var clock = FamousEngine.getClock();
+App.prototype.onMount = function (path) {
+	console.log("app mounted at " + path);
+};
 
-FamousEngine.getClock().setInterval(function () {
-	var time = clock.getTime();
-
-	lightNode.setPosition(0, Math.sin(time / 1200) * 250, Math.cos(time / 1200) * 250);
-	lightNode1.setPosition(Math.sin(time / 1500) * 250, Math.cos(time / 1200) * 250, 0);
-
-	meshNode.setRotation(
-					time / 1500,
-					time / 1200,
-					time / 1300
-					);
-
-}, 16);
+FamousEngine.createScene('body').addChild(new App());
