@@ -1,63 +1,36 @@
+/* 
+ * Copyright 2015 Phillip Hayward <phil@pjhayward.net>.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 'use strict';
 
-var FamousEngine = require('famous/core/FamousEngine');
-var Node = require('famous/core/Node');
-var Header = require('./Header');
-var Browser = require('./Browser');
-var Runtime = require('./Runtime');
-var WaitingRoom = require('./WaitingRoom');
+require('angular');
+require('angular-route');
 
-FamousEngine.init();
+angular.module("FormulaW", ['ngRoute'])
+				.config(['$routeProvider', function ($routeProvider) {
+						$routeProvider
+										.when('/', {templateUrl: 'partials/browser.html'})
+										.when('/host', {templateUrl: 'partials/host.html'})
+										.when('/join/:game', {templateUrl: 'partials/join.html'})
+										.when('/play/:game', {templateUrl: 'partials/game.html'})
+										.otherwise({redirectTo: '/'});
+					}]);
 
+require('./services/games');
+require('./controllers/Browser');
+require('./controllers/Join');
+require('./controllers/Game');
 
-function App() {
-	Node.call(this);
-
-	var headerHeight = 30;
-
-	var transitions = {
-		joinGame: function joinGame(gameName) {
-			alert('joining game ' + gameName);
-		},
-		leaveGame: function leaveGame() {
-			alert('leaving game');
-		}
-	};
-
-	new Header(this.addChild()
-					.setSizeMode('relative', 'absolute', 'absolute')
-					.setAbsoluteSize(1, headerHeight, 1)
-					.setProportionalSize(1, 1, 1));
-
-	this.addChild()
-					.setSizeMode('relative', 'relative', 'relative')
-					.setProportionalSize(1, 1, 1)
-					.setDifferentialSize(0, -headerHeight, 0)
-					.setPosition(0, headerHeight, 0).addChild(new Browser(transitions));
-
-	new Runtime(this.addChild()
-					.setSizeMode('relative', 'relative', 'relative')
-					.setProportionalSize(1, 1, 1)
-					.setDifferentialSize(0, -headerHeight, 0)
-					.setAlign(-1, 0, 0)
-					.setPosition(0, headerHeight, 0), transitions);
-
-	new WaitingRoom(this.addChild()
-					.setSizeMode('relative', 'relative', 'relative')
-					.setProportionalSize(1, 1, 1)
-					.setDifferentialSize(0, -headerHeight, 0)
-					.setAlign(-1, 0, 0)
-					.setPosition(0, headerHeight, 0), transitions);
-}
-
-App.prototype = Object.create(Node.prototype);
-
-App.prototype.onReceive = function (event, payload) {
-	console.log(event);
-};
-
-App.prototype.onMount = function (path) {
-	console.log("app mounted at " + path);
-};
-
-FamousEngine.createScene('body').addChild(new App());

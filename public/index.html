@@ -14,14 +14,18 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<html>
+<html ng-app="FormulaW">
   <head>
-    <title>Famo.us sandbox</title>
+    <title>Formula W</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 		<link rel="stylesheet" href="styles.css">
   </head>
   <body>
+		<div id="fw-header">
+			<a href="#/">Formula W</a>
+		</div>
+		<div class="fw-content" ng-view></div>
 		<script src="bundle.js"></script>
   </body>
 </html>

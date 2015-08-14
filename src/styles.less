@@ -18,12 +18,21 @@ limitations under the License.
     Author     : Phillip Hayward <phil@pjhayward.net>
 */
 
+@tableHeader: lightgray;
+@contentBody: #faffff;
+@header: lightgray;
+@borders: @header - #111;
+@borderHighlight: @borders + #222;
+@text: black;
+
 html, body {
 	width: 100%;
 	height: 100%;
 	margin: 0px;
 	padding: 0px;
-	background: white;
+	background: @contentBody;
+	color: @text;
+	font-family:sans-serif;
 }
 body {
 	position: absolute;
@@ -36,23 +45,74 @@ body {
 	overflow: hidden;
 }
 
+.h2 {
+	text-align:center;
+}
+
+table {
+	margin:auto;
+	border-collapse: collapse;
+	padding:4px 8px;
+}
+
+thead {
+	background:@tableHeader;
+}
+
+td, th {
+	padding:2px 4px;
+}
+
+a {
+	text-decoration: none;
+	color:@text;
+}
+
 #fw-header {
-	border-bottom:solid 1px darkgray;
+	border-bottom:solid 1px @borders;
 	font-size: 16pt;
 	padding-left:20px;
-	background:#ffe;
+	background:@header;
+	height:30px;
 }
 
 .fw-content {
-	border:solid 1px darkgray;
+	border:solid 1px @borders;
+	height: e('calc(100% - 35px)');
+	padding:2px 5px;
+	text-align:center;
 }
 
-.fw-button {
-	border: solid 2px lightgray;
-	border-right: solid 2px darkgray;
-	border-bottom: solid 2px darkgray;
-	border-radius:2px;
-	background: #ffe;
-	text-align:center;
-	cursor:pointer;
+.fw-footer {
+	font-size:8pt;
+	position: absolute;
+	bottom:0px;
+	left:0px;
+	right:0px;
+}
+
+#fw-browser {
+	height: 500px;
+	overflow-y: auto;
+	border:1px solid @borders;
+	width:80%;
+	margin:auto;
+	margin-bottom:5px;
+}
+
+#fw-browser > table {
+	width:100%;
+}
+
+
+button {
+	border:3px solid @borders;
+	border-top-color: @borderHighlight;
+	border-left-color: @borderHighlight;
+	background: @header;
+	border-radius:10px 0%;
+}
+
+button:hover {
+	background: @header + #333;
 }
