@@ -22,8 +22,12 @@ limitations under the License.
 		<link rel="stylesheet" href="styles.css">
   </head>
   <body>
-		<div id="fw-header">
+		<div id="fw-header" ng-controller="Header">
 			<a href="#/">Formula W</a>
+			<span class="fw-user-info">
+				Player Name:
+				<input ng-class="{valid:valid, invalid:!valid}" ng-model="user" ng-change="updateUser()">
+			</span>
 		</div>
 		<div class="fw-content" ng-view></div>
 		<script src="bundle.js"></script>

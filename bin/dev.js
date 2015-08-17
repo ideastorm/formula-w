@@ -69,10 +69,10 @@ fs.watch('src/styles.less',function(){
 
 updateCss();
 
-var serve = serveStatic(path.normalize('./public/'));
-
-var server = http.createServer(function(req, res){
-  serve(req, res, finalhandler(req, res))
-});
-
-server.listen(1618, function() {console.log(chalk.grey('serving ') + chalk.blue(path.resolve('./public/')) + chalk.grey(' on port ') + chalk.blue('1618'));});
+//var serve = serveStatic(path.normalize('./public/'));
+//
+//var server = http.createServer(function(req, res){
+//  serve(req, res, finalhandler(req, res))
+//});
+//
+//server.listen(1618, function() {console.log(chalk.grey('serving ') + chalk.blue(path.resolve('./public/')) + chalk.grey(' on port ') + chalk.blue('1618'));});

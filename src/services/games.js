@@ -16,24 +16,25 @@
 
 'use strict';
 
-angular.module("FormulaW").factory("Games", ['messaging', function (messaging) {
+angular.module("FormulaW").factory("Games", ['Messaging', function (Messaging) {
 		var service = {
-			gameList: []
+			update: _update,
+			currentGame: null
 		};
 
-		messaging.register("gameList", function (data) {
-			service.gameList.length = 0;
-			angular.copy(data, service.gameList);
+		var _callback;
+
+		Messaging.register("gameList", function (data) {
+			_callback.scope.$apply(function () {
+				_callback(data);
+			});
 		});
 
-		//sample game data structure (for now)
-//		{
-//				host: 'phil',
-//				map: 'Monaco',
-//				playerCount: 0,
-//				maxPlayers: 10,
-//				running: true,
-//				id: 1
-//			}
 		return service;
+
+		function _update(scope, callback) {
+			_callback = callback;
+			_callback.scope = scope;
+			Messaging.send('queryList');
+		}
 	}]);

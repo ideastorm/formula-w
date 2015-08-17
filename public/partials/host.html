@@ -15,5 +15,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <div ng-controller="Host">
-	<h2>Start a new game</h2>
+	<h2>Waiting for additional players</h2>
+
+	<div class="fw-div">
+		<h3>Map</h3>
+		<select ng-model="map" ng-show="hosting()">
+			<option value="Monaco">Monaco</option>
+		</select>
+		<div ng-show="!hosting()">{{map}}</div>
+		<img src="maps/{{map}}-preview.png">
+	</div>
+	<div class="fw-div">
+		<h3>Players</h3>
+		<table>
+			<thead>
+				<tr>
+					<th>Player</th>
+					<th>Ready</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr ng-repeat="player in players">
+					<td>{{player.name}}</td>
+					<td>{{player.ready}}</td>
+					<td><button ng-show="hosting()" ng-click="kick(player)">Kick</button></td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
 </div>

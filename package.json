@@ -36,8 +36,11 @@
   "license": "MIT",
   "dependencies": {
     "angular": "^1.4.4",
+    "angular-cookies": "^1.4.4",
     "angular-route": "^1.4.4",
     "babelify": "^6.0.1",
-    "express": "^4.13.3"
+    "express": "^4.13.3",
+    "socket.io": "^1.3.6",
+    "socket.io-client": "^1.3.6"
   }
 }

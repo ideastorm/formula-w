@@ -16,22 +16,46 @@
 
 'use strict';
 
-angular.module('FormulaW').factory("Messaging", ['$location', function ($location) {
-		var service = {};
+var io = require('socket.io-client');
 
-		try {
-			var ws = new WebSocket("ws://" + $location.host() + ":" + $location.port() + "/socket/");
-			ws.onmessage = function (message) {
-				_process(JSON.parse(message.data));
-			};
-		} catch (error) {
-			console.log(error);
-			alert("Failed to construct a web socket");
+angular.module('FormulaW').factory("Messaging", ['$location', '$cookies', function ($location, $cookies) {
+		var _socket = io($location.protocol() + "://" + $location.host() + ":" + $location.port() + "/");
+		var _userId = $cookies.get('userId');
+		if (!_userId) {
+			_userId = _guid();
+			$cookies.put('userId', _userId);
 		}
+		_socket.emit('userId', _userId);
+
+		var service = {
+			register: _register,
+			send: _send,
+			getUserId: _getUserId
+		};
 
 		return service;
 
-		function _process(message) {
-			console.log(message);
+		function _register(event, callback) {
+			console.log("registering callback for " + event);
+			_socket.on(event, callback);
+		}
+
+		function _send(event, message) {
+			console.log("sending " + message + " to " + event);
+			_socket.emit(event, message);
+		}
+
+		function _getUserId() {
+			return _userId;
 		}
 	}]);
+
+function _guid() { //from http://stackoverflow.com/a/105074/1024576
+	function s4() {
+		return Math.floor((1 + Math.random()) * 0x10000)
+						.toString(16)
+						.substring(1);
+	}
+	return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+					s4() + '-' + s4() + s4() + s4();
+}

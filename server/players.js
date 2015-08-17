@@ -15,3 +15,32 @@
  */
 
 'use strict';
+
+module.exports.quit = _quit;
+module.exports.checkUser = _checkUser;
+module.exports.lookup = _lookup;
+
+var _users = {};
+var _byId = {};
+
+function _checkUser(user, userId) {
+	var oldUser = _byId[userId];
+	var userConn = _users[user];
+	var valid = (!userConn || userConn === userId);
+	if (valid) {
+		if (oldUser)
+			_users[oldUser] = null;
+		_byId[userId] = user;
+		_users[user] = userId;
+	}
+	return {valid: valid};
+}
+
+function _quit(user, userId) {
+	_users[user] = null;
+	_byId[userId] = null;
+}
+
+function _lookup(userId) {
+	return _byId[userId];
+}

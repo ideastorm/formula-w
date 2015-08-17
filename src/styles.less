@@ -72,6 +72,7 @@ a {
 	border-bottom:solid 1px @borders;
 	font-size: 16pt;
 	padding-left:20px;
+	padding-right:20px;
 	background:@header;
 	height:30px;
 }
@@ -91,16 +92,29 @@ a {
 	right:0px;
 }
 
+.fw-div {
+	border:1px solid @borders;
+	margin:auto;
+	width:40%;
+	height:500px;
+	display:inline-table;
+}
+
+.fw-div img {
+	width:e('calc(100% - 10px)');
+	margin:5px;
+}
+
 #fw-browser {
+	.fw-div;
+	display:block;
 	height: 500px;
 	overflow-y: auto;
-	border:1px solid @borders;
 	width:80%;
-	margin:auto;
 	margin-bottom:5px;
 }
 
-#fw-browser > table {
+#fw-browser > table, .fw-div table {
 	width:100%;
 }
 
@@ -115,4 +129,23 @@ button {
 
 button:hover {
 	background: @header + #333;
+}
+
+.fw-user-info {
+	display:inline-block;
+	float:right;
+}
+
+.fw-user-info input{
+	border:3px solid @borderHighlight;
+	border-top-color: @borders;
+	border-left-color: @borders;
+}
+
+.valid {
+	background-color:#dfd;
+}
+
+.invalid {
+	background-color:#fdd;
 }

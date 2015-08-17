@@ -14,19 +14,22 @@
  * limitations under the License.
  */
 
-'use strict';
+'use strict'
 
-angular.module('FormulaW').controller('Browser', ['$scope', '$location', 'Games', function ($scope, $location, Games) {
-		$scope.games = [];
-		Games.update($scope, function (gameList) {
-			$scope.games = gameList;
-		});
+angular.module("FormulaW").factory("debounce", function () {
+	
+	var _pending = {};
 
-		$scope.join = function (game) {
-			if (game.running) {
-				$location.url('/play/' + game.id);
-			} else {
-				$location.url('/join/' + game.id);
-			}
-		};
-	}]);
+	function _debounce(tag, time, cb) {
+		function do_debounce(callback) {
+			clearTimeout(_pending[tag]);
+			_pending[tag] = setTimeout(callback, time);
+		}
+		if (typeof cb === 'function')
+			do_debounce(cb);
+		else
+			return do_debounce;
+	}
+
+	return _debounce;
+});

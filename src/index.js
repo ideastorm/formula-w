@@ -18,19 +18,23 @@
 
 require('angular');
 require('angular-route');
+require('angular-cookies');
 
-angular.module("FormulaW", ['ngRoute'])
+angular.module("FormulaW", ['ngRoute', 'ngCookies'])
 				.config(['$routeProvider', function ($routeProvider) {
 						$routeProvider
 										.when('/', {templateUrl: 'partials/browser.html'})
 										.when('/host', {templateUrl: 'partials/host.html'})
-										.when('/join/:game', {templateUrl: 'partials/join.html'})
+										.when('/join/:game', {templateUrl: 'partials/host.html'})
 										.when('/play/:game', {templateUrl: 'partials/game.html'})
 										.otherwise({redirectTo: '/'});
 					}]);
 
+require('./services/debounce');
 require('./services/games');
+require('./services/messaging');
+require('./controllers/Header');
 require('./controllers/Browser');
-require('./controllers/Join');
+require('./controllers/Host');
 require('./controllers/Game');
 
