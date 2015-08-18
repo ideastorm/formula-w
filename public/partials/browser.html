@@ -31,7 +31,7 @@ limitations under the License.
 					<td>{{game.map}}</td>
 					<td>{{game.players.length}}/{{game.maxPlayers}}</td>
 					<td>
-						<button ng-show="player.valid" ng-enable="game.playerCount < game.maxPlayers" ng-click="join(game)">Join</button>
+						<button ng-show="player.valid" ng-click="join(game)">{{joinText(game)}}</button>
 					</td>
 				</tr>
 				<tr ng-show="games.length < 1">

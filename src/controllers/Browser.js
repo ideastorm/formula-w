@@ -27,6 +27,11 @@ angular.module('FormulaW').controller('Browser', ['$scope', '$location', 'Games'
 			} else {
 				$location.url('/join/' + game.id);
 			}
-		}
-		;
+		};
+		$scope.joinText = function (game) {
+			if (game.running || game.players.length >= game.maxPlayers) {
+				return "Watch";
+			}
+			return "Join";
+		};
 	}]);

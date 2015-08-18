@@ -53,17 +53,13 @@ function _bind(socket) {
 
 	socket.on('join', function (gameId) {
 		if (socket.userId) {
-			if (!_playerGames[socket.userId]) {
-				_playerGames[socket.userId] = gameId;
-				socket.join(gameId);
-				_joinGame(gameId, socket.userId);
-			} else {
-				var game = _findGame(_playerGames[socket.userId]);
-				if (game) {
-					socket.emit('currentGame', game);
-					socket.join(game.id);
-				}
+			if (_playerGames[socket.userId]) {
+				socket.leave(_playerGames[socket.userId]);
+				_removeFromGame(_playerGames[socket.userId], socket.userId);
 			}
+			_playerGames[socket.userId] = gameId;
+			socket.join(gameId);
+			_joinGame(gameId, socket.userId);
 		}
 	});
 
@@ -104,7 +100,11 @@ function _bind(socket) {
 
 	socket.on('startGame', function () {
 		if (socket.userId && _playerGames[socket.userId]) {
-			_io.to(_playerGames[socket.userId]).emit('startGame');
+			var game = _findGame(_playerGames[socket.userId]);
+			if (game) {
+				game.running = true;
+				_io.to(game.id).emit('startGame');
+			}
 		}
 	});
 }
