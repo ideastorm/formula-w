@@ -26,7 +26,7 @@ limitations under the License.
 			<a href="#/">Formula W</a>
 			<span class="fw-user-info">
 				Player Name:
-				<input ng-class="{valid:valid, invalid:!valid}" ng-model="user" ng-change="updateUser()">
+				<input ng-class="{valid:player.valid, invalid:!player.valid}" ng-model="player.name" ng-change="updateUser()">
 			</span>
 		</div>
 		<div class="fw-content" ng-view></div>

@@ -16,12 +16,24 @@
 
 'use strict';
 
-module.exports.quit = _quit;
-module.exports.checkUser = _checkUser;
+module.exports.bind = _bind;
 module.exports.lookup = _lookup;
 
 var _users = {};
 var _byId = {};
+
+function _bind(socket) {
+	socket.on('quit', function () {
+		if (socket.userId)
+			_quit(socket.userId);
+	});
+
+
+	socket.on('checkUser', function (data) {
+		if (socket.userId)
+			socket.emit('userInfo', _checkUser(data, socket.userId));
+	});
+}
 
 function _checkUser(user, userId) {
 	var oldUser = _byId[userId];

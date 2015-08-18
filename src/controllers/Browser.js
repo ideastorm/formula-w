@@ -15,18 +15,18 @@
  */
 
 'use strict';
-
-angular.module('FormulaW').controller('Browser', ['$scope', '$location', 'Games', function ($scope, $location, Games) {
+angular.module('FormulaW').controller('Browser', ['$scope', '$location', 'Games', 'player', function ($scope, $location, Games, player) {
 		$scope.games = [];
+		$scope.player = player;
 		Games.update($scope, function (gameList) {
 			$scope.games = gameList;
 		});
-
 		$scope.join = function (game) {
 			if (game.running) {
 				$location.url('/play/' + game.id);
 			} else {
 				$location.url('/join/' + game.id);
 			}
-		};
+		}
+		;
 	}]);

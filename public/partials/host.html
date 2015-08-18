@@ -33,15 +33,22 @@ limitations under the License.
 					<th>Player</th>
 					<th>Ready</th>
 					<th></th>
+					<th></th>
 				</tr>
 			</thead>
 			<tbody>
-				<tr ng-repeat="player in players">
-					<td>{{player.name}}</td>
-					<td>{{player.ready}}</td>
-					<td><button ng-show="hosting()" ng-click="kick(player)">Kick</button></td>
+				<tr ng-repeat="user in players">
+					<td>{{user.name}}</td>
+					<td>
+						<span ng-show="!isMe(user) || user.ready === 'Ready'">{{user.ready}}</span>
+						<button ng-show="isMe(user) && user.ready !== 'Ready'" ng-click="player.toggleReady()">{{user.ready}}</button>
+					</td>
+					<td><button ng-show="hosting()" ng-click="kick(user)">Kick</button></td>
+					<td><button ng-show="hosting()" ng-click="ban(user)">Ban</button></td>
 				</tr>
 			</tbody>
 		</table>
+		<button ng-show="hosting() && playersReady()" ng-click="start()">Start Game</button>
 	</div>
+	<h4 ng-show="!inGame()">You are a spectator</h4>
 </div>

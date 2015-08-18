@@ -34,52 +34,12 @@ io.on('connection', function (socket) {
 		socket.emit("userName", players.lookup(data));
 	});
 
+	games.bind(socket);
+	players.bind(socket);
+
 	socket.on('disconnect', function () {
 
 	});
-
-	socket.on('quit', function () {
-		if (socket.userId)
-			players.quit(socket.userId);
-	});
-
-	socket.on('queryList', function () {
-		console.log("retrieving list of games");
-		socket.emit('gameList', games.getList());
-	});
-
-	socket.on('checkUser', function (data) {
-		if (socket.userId)
-			socket.emit('userInfo', players.checkUser(data, socket.userId));
-	});
-
-	socket.on('newGame', function () {
-		if (socket.userId) {
-			var game = games.create(socket.userId);
-			socket.emit('currentGame', game);
-			socket.join(game.id);
-		}
-		io.emit("gameList", games.getList());
-	});
-
-	socket.on('join', function (gameId) {
-		if (socket.userId) {
-			socket.join(gameId);
-			games.joinGame(gameId, socket.userId);
-		}
-	});
-
-	socket.on('leave', function (gameId) {
-		socket.leave(gameId);
-		if (socket.userId) {
-			games.removeFromGame(gameId, socket.userId);
-		}
-	});
-
-	socket.on('kick', function (message) {
-		games.removeFromGame(message.gameId, message.userId);
-	});
-
 });
 
 http.listen(1618, function () {

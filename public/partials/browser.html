@@ -30,7 +30,9 @@ limitations under the License.
 					<td>{{game.players[0].name}}</td>
 					<td>{{game.map}}</td>
 					<td>{{game.players.length}}/{{game.maxPlayers}}</td>
-					<td><button ng-enable="game.playerCount < game.maxPlayers" ng-click="join(game)">Join</button></td>
+					<td>
+						<button ng-show="player.valid" ng-enable="game.playerCount < game.maxPlayers" ng-click="join(game)">Join</button>
+					</td>
 				</tr>
 				<tr ng-show="games.length < 1">
 					<td colspan="4">There are currently no open games</td>
@@ -39,7 +41,7 @@ limitations under the License.
 		</table>
 	</div>
 	<div>
-		<button onclick="location.hash = '/host'">Start a new game</button>
+		<button ng-show="player.valid" onclick="location.hash = '/host'">Start a new game</button>
 	</div>
 	<div class="fw-footer">Formula W uses cookies to keep track of which game you are participating in.  Clearing your cookies will remove you from the game.</div>
 </div>

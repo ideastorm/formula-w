@@ -25,9 +25,11 @@ angular.module("FormulaW").factory("Games", ['Messaging', function (Messaging) {
 		var _callback;
 
 		Messaging.register("gameList", function (data) {
-			_callback.scope.$apply(function () {
-				_callback(data);
-			});
+			if (_callback && _callback.scope) {
+				_callback.scope.$apply(function () {
+					_callback(data);
+				});
+			}
 		});
 
 		return service;

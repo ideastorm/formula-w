@@ -16,27 +16,13 @@
 
 'use strict';
 
-angular.module("FormulaW").controller("Header", ['$scope', 'Messaging', 'debounce', function ($scope, Messaging, debounce) {
+angular.module("FormulaW").controller("Header", ['$scope', 'Messaging', 'debounce', 'player', function ($scope, Messaging, debounce, player) {
 		var debouncer = debounce('user', 250);
-
-		Messaging.register("userName", function (name) {
-			$scope.$apply(function () {
-				$scope.user = name;
-				$scope.valid = true;
-			});
-		});
-
-		Messaging.register("userInfo", function (userData) {
-			$scope.$apply(function () {
-				$scope.valid = userData.valid;
-			});
-		});
-
-		$scope.user = null;
+		$scope.player = player;
 
 		$scope.updateUser = function () {
 			debouncer(function () {
-				Messaging.send("checkUser", $scope.user);
+				Messaging.send("checkUser", $scope.player.name);
 			});
 		};
 

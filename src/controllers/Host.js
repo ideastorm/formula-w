@@ -16,27 +16,89 @@
 
 'use strict';
 
-angular.module('FormulaW').controller('Host', ['$scope', '$location', '$routeParams', 'Messaging', 'Games', function ($scope, $location, $routeParams, Messaging, Games) {
+angular.module('FormulaW').controller('Host', ['$scope', '$location', '$routeParams', 'Messaging', 'Games', 'player', function ($scope, $location, $routeParams, Messaging, Games, player) {
 		$scope.map = 'Monaco';
+		$scope.player = player;
+		$scope.starting = false;
 
-		$scope.kick = function (player) {
+		$scope.kick = function (otherPlayer) {
 			if ($scope.hosting())
-				Messaging.send("kick", {gameId: Games.currentGame.id, userId: player.id});
+				Messaging.send("kick", {gameId: Games.currentGame.id, userId: otherPlayer.id});
 		};
 
+		$scope.ban = function (otherPlayer) {
+			if ($scope.hosting())
+				Messaging.send("ban", {gameId: Games.currentGame.id, userId: otherPlayer.id});
+		};
+
+		$scope.isMe = function (user) {
+			return user.id === player.userId;
+		}
+
 		$scope.hosting = function () {
-			return $scope.players[0].id === Messaging.getUserId();
+			return $scope.players
+							&& $scope.players[0]
+							&& $scope.players[0].id === player.userId;
+		};
+
+		$scope.inGame = function () {
+			if ($scope.players) {
+				for (var i = 0; i < $scope.players.length; i++) {
+					if ($scope.players[i].id === player.userId)
+						return true;
+				}
+			}
+			return false;
+		};
+
+		$scope.playersReady = function () {
+			if ($scope.players && $scope.players.length) {
+				for (var i = 0; i < $scope.players.length; i++) {
+					if ($scope.players[i].ready === "Not Ready")
+						return false;
+				}
+				return true;
+			}
+			return false;
+		}
+
+		$scope.start = function () {
+			if ($scope.hosting() && $scope.playersReady()) {
+				Messaging.send("startGame");
+			}
 		};
 
 		$scope.$on("$locationChangeStart", function (event) {
-			if (!confirm('Leaving now will remove you from this game.  Continue?'))
+			var message;
+			if ($scope.starting)
+				return;
+			if ($scope.hosting()) {
+				if ($scope.players.length > 1)
+					message = 'Leaving will transfer ownership of the game to another player.  Continue?';
+				else
+					message = 'Leaving will shut down this game.  Continue?';
+			} else if ($scope.inGame()) {
+				message = 'Leaving now will remove you from this game.  Continue?';
+			} // else you are a spectator
+			if (message && !confirm(message)) {
 				event.preventDefault();
-			else
-				Messaging.send('leave', Games.currentGame.id);
+				return;
+			}
+			Messaging.send('leave', Games.currentGame.id);
+		});
+
+		Messaging.register("startGame", function () {
+			$scope.$apply(function () {
+				$scope.starting = true;
+				$location.url('/play/' + Games.currentGame.id);
+			});
 		});
 
 		Messaging.register("currentGame", function (data) {
 			Games.currentGame = data;
+			if (data.players.length === 0)
+				$location.url('/');
+
 			$scope.$apply(function () {
 				$scope.players = data.players;
 				$scope.map = data.map;

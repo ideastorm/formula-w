@@ -18,19 +18,12 @@
 
 var io = require('socket.io-client');
 
-angular.module('FormulaW').factory("Messaging", ['$location', '$cookies', function ($location, $cookies) {
+angular.module('FormulaW').factory("Messaging", ['$location', function ($location) {
 		var _socket = io($location.protocol() + "://" + $location.host() + ":" + $location.port() + "/");
-		var _userId = $cookies.get('userId');
-		if (!_userId) {
-			_userId = _guid();
-			$cookies.put('userId', _userId);
-		}
-		_socket.emit('userId', _userId);
 
 		var service = {
 			register: _register,
-			send: _send,
-			getUserId: _getUserId
+			send: _send
 		};
 
 		return service;
@@ -44,18 +37,4 @@ angular.module('FormulaW').factory("Messaging", ['$location', '$cookies', functi
 			console.log("sending " + message + " to " + event);
 			_socket.emit(event, message);
 		}
-
-		function _getUserId() {
-			return _userId;
-		}
 	}]);
-
-function _guid() { //from http://stackoverflow.com/a/105074/1024576
-	function s4() {
-		return Math.floor((1 + Math.random()) * 0x10000)
-						.toString(16)
-						.substring(1);
-	}
-	return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
-					s4() + '-' + s4() + s4() + s4();
-}
