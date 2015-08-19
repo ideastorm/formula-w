@@ -22,6 +22,7 @@ var http = require('http').Server(app);
 var io = require('socket.io')(http);
 var games = require('./games');
 var players = require('./players');
+var runtime = require('./runtime');
 games.setPlayers(players);
 games.setIO(io);
 
@@ -36,6 +37,7 @@ io.on('connection', function (socket) {
 
 	games.bind(socket);
 	players.bind(socket);
+	runtime.bind(socket, io);
 
 	socket.on('disconnect', function () {
 

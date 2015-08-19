@@ -38,7 +38,7 @@ function _bind(socket) {
 		if (socket.userId) {
 			var game;
 			if (!_playerGames[socket.userId]) {
-				game = _create(socket.userId);
+				game = _create(socket.userId, socket.id);
 				_playerGames[socket.userId] = game.id;
 			} else {
 				game = _findGame(_playerGames[socket.userId]);
@@ -53,13 +53,13 @@ function _bind(socket) {
 
 	socket.on('join', function (gameId) {
 		if (socket.userId) {
-			if (_playerGames[socket.userId]) {
+			if (_playerGames[socket.userId] && _playerGames[socket.userId] !== gameId) {
 				socket.leave(_playerGames[socket.userId]);
 				_removeFromGame(_playerGames[socket.userId], socket.userId);
 			}
 			_playerGames[socket.userId] = gameId;
 			socket.join(gameId);
-			_joinGame(gameId, socket.userId);
+			_joinGame(gameId, socket.userId, socket.id);
 		}
 	});
 
@@ -102,19 +102,22 @@ function _bind(socket) {
 		if (socket.userId && _playerGames[socket.userId]) {
 			var game = _findGame(_playerGames[socket.userId]);
 			if (game) {
-				game.map = {name: game.mapName, width: 1180, height: 637};
+				game.map = {name: game.mapName, width: 3000, height: 1972};
 				game.running = true;
+				game.activePlayer = 0;
+				_randomizePlayers(game);
+				console.log(game);
 				_io.to(game.id).emit('startGame');
 			}
 		}
 	});
 }
 
-function _create(hostUserId) {
+function _create(hostUserId, socketId) {
 	var time = Date.now();
 	var game = {
 		mapName: 'Monaco',
-		players: [{id: hostUserId, name: _players.lookup(hostUserId), ready: 'Not Ready'}],
+		players: [{id: hostUserId, name: _players.lookup(hostUserId), ready: 'Not Ready', socket: socketId}],
 		banned: [],
 		maxPlayers: 10,
 		running: false,
@@ -151,7 +154,7 @@ function _findPlayerIndex(game, userId) {
 	return -1;
 }
 
-function _joinGame(gameId, userId) {
+function _joinGame(gameId, userId, socketId) {
 	var gameIndex = _findGameIndex(gameId);
 	if (gameIndex !== null) {
 		var game = _games[gameIndex];
@@ -159,7 +162,7 @@ function _joinGame(gameId, userId) {
 		if (playerIndex < 0 && game.banned.indexOf(userId) < 0)
 		{
 			var playerName = _players.lookup(userId);
-			game.players.push({id: userId, name: playerName, ready: 'Not Ready'});
+			game.players.push({id: userId, name: playerName, ready: 'Not Ready', socket: socketId});
 		}
 		_io.emit('gameList', _games);
 		_io.to(gameId).emit('currentGame', game);
@@ -193,4 +196,21 @@ function _banFromGame(gameId, userId) {
 		_io.to(gameId).emit('currentGame', game);
 		_io.emit('gameList', _games);
 	}
+}
+
+function _randomizePlayers(game) {
+	var i;
+	var playerIds = [];
+	var orderedIds = [];
+	for (i = 0; i < game.players.length; i++) {
+		var id = Math.random();
+		playerIds.push(id);
+		orderedIds.push(id);
+	}
+	orderedIds.sort();
+	var orderedPlayers = [];
+	for (i = 0; i < playerIds.length; i++) {
+		orderedPlayers.push(game.players[playerIds.indexOf(orderedIds[i])]);
+	}
+	game.players = orderedPlayers;
 }

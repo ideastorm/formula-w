@@ -19,6 +19,8 @@
 angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games', 'Messaging', function ($scope, $routeParams, Games, Messaging) {
 		$scope.games = Games;
 
+		var gameView = document.getElementById('fw-game-view');
+
 		Messaging.register("currentGame", function (data) {
 			Games.currentGame = data;
 			if (data.players.length === 0)
@@ -27,7 +29,14 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
 			$scope.$apply(function () {
 				$scope.players = data.players;
 				$scope.map = data.map;
+
+				setTimeout(function () {
+					gameView.scrollTop = 658;
+					gameView.scrollLeft = 0;
+				}, 1);
+
 			});
+
 		});
 
 		Messaging.send("join", $routeParams.game);

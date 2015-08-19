@@ -17,7 +17,7 @@
 'use strict';
 
 angular.module('FormulaW').controller('Host', ['$scope', '$location', '$routeParams', 'Messaging', 'Games', 'player', function ($scope, $location, $routeParams, Messaging, Games, player) {
-		$scope.map = 'Monaco';
+		$scope.mapName = 'Monaco';
 		$scope.player = player;
 		$scope.starting = false;
 
