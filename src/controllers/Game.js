@@ -16,6 +16,20 @@
 
 'use strict';
 
-angular.module('FormulaW').controller('Game', ['$scope', function ($scope) {
+angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games', 'Messaging', function ($scope, $routeParams, Games, Messaging) {
+		$scope.games = Games;
+
+		Messaging.register("currentGame", function (data) {
+			Games.currentGame = data;
+			if (data.players.length === 0)
+				$location.url('/');
+
+			$scope.$apply(function () {
+				$scope.players = data.players;
+				$scope.map = data.map;
+			});
+		});
+
+		Messaging.send("join", $routeParams.game);
 
 	}]);

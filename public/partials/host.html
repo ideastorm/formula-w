@@ -19,11 +19,11 @@ limitations under the License.
 
 	<div class="fw-div">
 		<h3>Map</h3>
-		<select ng-model="map" ng-show="hosting()">
+		<select ng-model="mapName" ng-show="hosting()">
 			<option value="Monaco">Monaco</option>
 		</select>
-		<div ng-show="!hosting()">{{map}}</div>
-		<img src="maps/{{map}}-preview.png">
+		<div ng-show="!hosting()">{{mapName}}</div>
+		<img src="maps/{{mapName}}-preview.png">
 	</div>
 	<div class="fw-div">
 		<h3>Players</h3>

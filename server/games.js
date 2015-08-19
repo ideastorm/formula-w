@@ -102,6 +102,7 @@ function _bind(socket) {
 		if (socket.userId && _playerGames[socket.userId]) {
 			var game = _findGame(_playerGames[socket.userId]);
 			if (game) {
+				game.map = {name: game.mapName, width: 1180, height: 637};
 				game.running = true;
 				_io.to(game.id).emit('startGame');
 			}
@@ -112,7 +113,7 @@ function _bind(socket) {
 function _create(hostUserId) {
 	var time = Date.now();
 	var game = {
-		map: 'Monaco',
+		mapName: 'Monaco',
 		players: [{id: hostUserId, name: _players.lookup(hostUserId), ready: 'Not Ready'}],
 		banned: [],
 		maxPlayers: 10,
