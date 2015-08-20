@@ -89,22 +89,233 @@ angular.module('mapBuilder', [])
 				.controller('builder', ['$scope', 'fileReader', function ($scope, fileReader) {
 
 						$scope.mapImage = null;
+						$scope.spacesPlaced = false;
+						$scope.linksMarked = false;
+						$scope.cornersPlaced = false;
+						$scope.startSpacesMarked = false;
+						$scope.mapComplete = false;
+						$scope.activeCorner = null;
 
 						function _getMapInfo() {
 							$scope.$apply(function () {
-								var img = document.getElementById('mapImage');
-								$scope.map.width = img.naturalWidth;
-								$scope.map.height = img.naturalHeight;
+								$scope.map.width = $scope.mapImage.naturalWidth;
+								$scope.map.height = $scope.mapImage.naturalHeight;
+								var div = document.getElementById('imgContainer');
+								div.style.width = $scope.map.width + 'px';
+								div.style.height = $scope.map.height + 'px';
+								div.style.background = 'url(' + $scope.mapImage.src + ')';
 							});
 						}
+
+						function _spacePlacementMouseDown(event, space) {
+							if (event.ctrlKey && event.shiftKey)
+							{
+								var index = $scope.spaceIndex(space);
+								$scope.map.spaces.splice(index, 1);
+								$scope.activeSpace = null;
+								$scope.adjustRotation = false;
+								$scope.deleted = true;
+							} else if (event.ctrlKey) {
+								$scope.activeSpace = space;
+								$scope.adjustRotation = true;
+							} else {
+								if ($scope.activeSpace === space && $scope.adjustRotation) {
+									$scope.adjustRotation = false;
+									$scope.activeSpace = null;
+								}
+								else if ($scope.activeSpace === space)
+									$scope.adjustRotation = true;
+								else {
+									$scope.activeSpace = space;
+									$scope.selected = true;
+								}
+							}
+						}
+
+						function _spacePlacementFinalizeAlt(event) {
+							if (!$scope.activeSpace && !$scope.deleted) {
+								$scope.addSpace();
+							} else if (!event.ctrlKey && !event.shiftKey) {
+								$scope.adjustRotation = false;
+								if (!$scope.selected) {
+									$scope.activeSpace = false;
+								}
+							}
+							$scope.deleted = false;
+							$scope.selected = false;
+						}
+
+						function _spacePlacementMouseMove(event) {
+							if ($scope.activeSpace) {
+								if ($scope.adjustRotation || event.ctrlKey) {
+									var dx = event.layerX - $scope.activeSpace.x;
+									var dy = event.layerY - $scope.activeSpace.y;
+									var theta = Math.atan2(dy, dx) * 180 / Math.PI;
+									$scope.activeSpace.theta = theta;
+								} else {
+									if (event.layerX > 32) {
+										$scope.activeSpace.x = event.layerX;
+										$scope.activeSpace.y = event.layerY;
+									}
+									else {
+										$scope.activeSpace.x += event.movementX;
+										$scope.activeSpace.y += event.movementY;
+									}
+								}
+							}
+						}
+
+						var _emptyFn = function () {
+						};
+
+						$scope.spaceIndex = function (space) {
+							if ($scope.map && $scope.map.spaces)
+								return $scope.map.spaces.indexOf(space);
+							return -1;
+						};
+
+						$scope.isAdjacent = function (spaceIndex) {
+							return $scope.activeSpace && $scope.activeSpace.adjacent.indexOf(spaceIndex) >= 0;
+						};
+						$scope.isMoveTarget = function (spaceIndex) {
+							return $scope.activeSpace && $scope.activeSpace.moveTargets.indexOf(spaceIndex) >= 0;
+						};
+
+						$scope.isStartSpace = function (spaceIndex) {
+							return $scope.map.startSpaces.indexOf(spaceIndex) >= 0;
+						};
+
+						$scope.isCorner = function (spaceIndex) {
+							return $scope.activeCorner && $scope.activeCorner.spaces.indexOf(spaceIndex) >= 0;
+						}
+
+						function _removeLink(space, spaceIndex) {
+							if (space) {
+								var removalIndex = space.adjacent.indexOf(spaceIndex);
+								if (removalIndex >= 0)
+									space.adjacent.splice(removalIndex, 1);
+								removalIndex = space.moveTargets.indexOf(spaceIndex);
+								if (removalIndex >= 0)
+									space.moveTargets.splice(removalIndex, 1);
+							}
+						}
+
+						function _spaceLinkMouseDown(event, space) {
+							if ($scope.activeSpace) {
+								var activeSpaceIndex = $scope.spaceIndex($scope.activeSpace);
+								var spaceIndex = $scope.spaceIndex(space);
+								if (event.ctrlKey && event.shiftKey) {
+									_removeLink($scope.activeSpace, spaceIndex);
+									_removeLink(space, activeSpaceIndex);
+									return;
+								} else if (event.ctrlKey) {
+									_removeLink($scope.activeSpace, spaceIndex);
+									$scope.activeSpace.moveTargets.push(spaceIndex);
+									_removeLink(space, activeSpaceIndex);
+									$scope.map.spaces[spaceIndex].adjacent.push(activeSpaceIndex);
+									return;
+								} else if (event.shiftKey) {
+									_removeLink($scope.activeSpace, spaceIndex);
+									$scope.activeSpace.adjacent.push(spaceIndex);
+									return;
+								}
+							}
+							$scope.activeSpace = space;
+						}
+
+						function _startSpaceClick(event, space) {
+							var spaceIndex = $scope.spaceIndex(space);
+							var removalIndex = $scope.map.startSpaces.indexOf(spaceIndex);
+							if (removalIndex >= 0)
+								$scope.map.startSpaces.splice(removalIndex, 1);
+							else
+								$scope.map.startSpaces.push(spaceIndex);
+						}
+
+						function _cornerSpaceClick(event, space) {
+							if ($scope.activeCorner) {
+								var spaceIndex = $scope.spaceIndex(space);
+								var removalIndex = $scope.activeCorner.spaces.indexOf(spaceIndex);
+								if (removalIndex >= 0)
+									$scope.activeCorner.spaces.splice(removalIndex, 1);
+								else
+									$scope.activeCorner.spaces.push(spaceIndex);
+							}
+						}
+
+						$scope.startMarkingCorners = function () {
+							$scope.activeSpace = null;
+							$scope.spacesPlaced = true;
+							$scope.finalizeAltEdit = _emptyFn;
+							$scope.updateActiveLocation = _emptyFn;
+							$scope.imgMouseDown = _emptyFn;
+							$scope.imgClick = _cornerSpaceClick;
+						};
+
+						$scope.startMarkingLinks = function () {
+							$scope.activeCorner = null;
+							$scope.activeSpace = null;
+							$scope.cornersPlaced = true;
+							$scope.finalizeAltEdit = _emptyFn;
+							$scope.updateActiveLocation = _emptyFn;
+							$scope.imgMouseDown = _emptyFn;
+							$scope.imgClick = _spaceLinkMouseDown;
+						};
+
+						$scope.startMarkingStartSpaces = function () {
+							$scope.activeSpace = null;
+							$scope.linksMarked = true;
+							$scope.finalizeAltEdit = _emptyFn;
+							$scope.updateActiveLocation = _emptyFn;
+							$scope.imgMouseDown = _emptyFn;
+							$scope.imgClick = _startSpaceClick;
+						};
+
+						$scope.imgMouseDown = _spacePlacementMouseDown;
+						$scope.finalizeAltEdit = _spacePlacementFinalizeAlt;
+						$scope.updateActiveLocation = _spacePlacementMouseMove;
+						$scope.imgClick = _emptyFn;
+
+						$scope.editCorner = function (corner) {
+							$scope.activeCorner = corner;
+						};
+
+						$scope.addCorner = function () {
+							var newCorner = {
+								name: '',
+								requiredStops: 1,
+								spaces: []
+							};
+							$scope.map.corners.push(newCorner);
+							$scope.activeCorner = newCorner;
+						};
+
+						$scope.addSpace = function () {
+							var newSpace = {
+								x: $scope.map.width / 2,
+								y: $scope.map.height / 2,
+								theta: 0,
+								adjacent: [],
+								moveTargets: []
+							};
+							$scope.map.spaces.push(newSpace);
+							$scope.activeSpace = newSpace;
+						};
 
 						$scope.readFile = function () {
 							fileReader.readAsDataUrl($scope.file, $scope)
 											.then(function (result) {
-												$scope.mapImage = result;
-												$scope.map = {};
+
+												$scope.mapImage = new Image();
+												$scope.mapImage.src = result;
+												$scope.map = {
+													spaces: [],
+													corners: [],
+													startSpaces: []
+												};
 												setTimeout(_getMapInfo, 1);
 											});
 						};
+
 					}]);
 

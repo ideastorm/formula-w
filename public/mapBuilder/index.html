@@ -25,24 +25,126 @@ limitations under the License.
 				top:0px;
 				right:0px;
 				bottom:0px;
-				width:200px;
+				width:250px;
 				z-index: 10;
-				background-color:blue;
+				padding:10px 15px;
+				box-sizing: border-box;
+			}
+			#dashboard > input {
+				width:220px;
+				box-sizing: border-box;
 			}
 			#imgScroll {
-				width:calc(100% - 200px);
+				width:calc(100% - 250px);
 				height:100%;
 				overflow:auto;
+			}
+			#jsonContainer {
+				overflow:auto;
+			}
+			html, body, body > div {
+				width:100%;
+				height:100%;
+				padding:0px;
+				margin:0px;
+				overflow:hidden;
+			}
+			#imgContainer {
+				position: relative;
+			}
+			#imgContainer > img {
+				position:absolute;
+				rotation-point: 50% 50%;
+				width:32px;
+				height:32px;
+				margin-left:-16px;
+				margin-top:-16px;
+			}
+			.active, .start-space {
+				border:1px solid yellow;
+			}
+			.active-adjacent, .corner-space {
+				border:1px solid red;
+			}
+			.active-move-target {
+				border:1px solid green;
+			}
+			.active-shadow {
+				opacity: 0.4;
 			}
 		</style>
   </head>
   <body ng-app="mapBuilder" ng-controller="builder">
-		<div ng-show="!mapImage" file-input="file" on-change="readFile()"></div>
-		<div ng-show="mapImage">
+		<div ng-show="!mapImage" file-input="file" on-change="readFile()" style="padding:10px 20px"></div>
+		<div ng-show="mapImage && !mapComplete">
 			<div id="imgScroll">
-				<img id="mapImage" ng-src="{{mapImage}}" />
+				<div id="imgContainer" ng-mousemove="updateActiveLocation($event)" ng-mousedown="finalizeAltEdit($event)">
+					<img src="marker.png" 
+							 ng-repeat="space in map.spaces"
+							 ng-class="{
+								 active:(activeSpace===space),
+												 'active-shadow':activeSpace === space && cornersPlaced && !linksMarked,
+												 'active-adjacent': isAdjacent($index),
+												 'active-move-target': isMoveTarget($index),
+												 'corner-space': isCorner($index),
+												 'start-space': isStartSpace($index)}"
+							 style="left:{{space.x}}px;top:{{space.y}}px;transform:rotate({{space.theta}}deg)"
+							 ng-mousedown="imgMouseDown($event, space)"
+							 ng-click="imgClick($event, space)">
+				</div>
 			</div>
-			<div id="dashboard"></div>
+			<div id="dashboard">
+				Map Info:<br>
+				Width: {{map.width}}<br>
+				Height: {{map.height}}<br>
+				Name: <input ng-model="map.name" type="text"><br>
+				Spaces: {{map.spaces.length}}<br>
+				Corners: {{map.corners.length}}<br>
+				Starting Spaces: {{map.startSpaces.length}}<br>
+				<div ng-show ="!spacesPlaced">
+					<button ng-click="addSpace()">Add space</button><br>
+					Click to reposition<br>
+					Ctrl+Click to rotate<br>
+					Ctrl+Shift+Click to remove<br>
+					<button ng-click="startMarkingCorners()">Done marking spaces</button>
+				</div>
+				<div ng-show="spacesPlaced && !cornersPlaced">
+					<button ng-click="addCorner()">Add a corner</button><br>
+					<div ng-repeat="corner in map.corners">
+						<button ng-click="editCorner(corner)">Edit {{corner.name}}</button>
+					</div>
+					<div ng-show="activeCorner">
+						Corner Info:<br>
+					Name: <input ng-model="activeCorner.name" type="text"><br>
+					Stops: <input ng-model="activeCorner.requiredStops" type="text"><br>
+					Spaces: {{activeCorner.spaces.length}}<br>
+					</div>
+					<button ng-click="startMarkingLinks()">Done marking corners</button>
+				</div>
+				<div ng-show="cornersPlaced && !linksMarked">
+					Click to select<br>
+					Shift+Click marks adjacent<br>
+					Ctrl+Click marks valid move<br>
+					Ctrl+Shift+Click clears link<br>
+					<button ng-click="startMarkingStartSpaces()">Done linking spaces</button>
+				</div>
+				<div ng-show="linksMarked && !startSpacesMarked">
+
+					<button ng-click="mapComplete = true">Done marking start spaces</button>
+				</div>
+
+				<div ng-show="activeSpace">
+					Active space: {{spaceIndex(activeSpace)}}<br>
+					X: {{activeSpace.x}}<br>
+					Y: {{activeSpace.y}}<br>
+					Theta: {{activeSpace.theta}}<br>
+				</div>
+			</div>
+		</div>
+		<div ng-show="mapComplete" id="jsonContainer">
+			<pre>
+		{{map| json}}
+			</pre>
 		</div>
 		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular.min.js"></script>
 		<script src="index.js"></script>
