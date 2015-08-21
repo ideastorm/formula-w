@@ -27,6 +27,7 @@ var _games = [];
 var _players;
 var _io;
 var _playerGames = {};
+var _maps = require('../shared/maps');
 
 function _bind(socket) {
 	socket.on('queryList', function () {
@@ -79,7 +80,6 @@ function _bind(socket) {
 		}
 	});
 
-
 	socket.on('leave', function (gameId) {
 		socket.leave(gameId);
 		if (socket.userId) {
@@ -102,12 +102,33 @@ function _bind(socket) {
 		if (socket.userId && _playerGames[socket.userId]) {
 			var game = _findGame(_playerGames[socket.userId]);
 			if (game) {
-				game.map = {name: game.mapName, width: 3000, height: 1972};
 				game.running = true;
 				game.activePlayer = 0;
+				game.map = _maps[game.mapName];
 				_randomizePlayers(game);
-				console.log(game);
+				_assignStartSpaces(game);
+				_io.to(game.id).emit("currentGame", game);
 				_io.to(game.id).emit('startGame');
+			}
+		}
+	});
+
+	socket.on('selectCar', function (data) {
+		if (socket.userId && _playerGames[socket.userId]) {
+			var game = _findGame(_playerGames[socket.userId]);
+			if (game) {
+				var playerIndex = _findPlayerIndex(game, socket.userId);
+				if (playerIndex >= 0) {
+					var player = game.players[playerIndex];
+					var message = {
+						removed: data
+					};
+					if (player.car)
+						message.added = player.car;
+					player.car = data;
+					_io.to(game.id).emit('updateCars', message);
+					_io.to(game.id).emit('currentGame', game);
+				}
 			}
 		}
 	});
@@ -213,4 +234,13 @@ function _randomizePlayers(game) {
 		orderedPlayers.push(game.players[playerIds.indexOf(orderedIds[i])]);
 	}
 	game.players = orderedPlayers;
+}
+
+function _assignStartSpaces(game) {
+	var i;
+	if (game.map) {
+		for (i = 0; i < game.players.length; i++) {
+			game.players[i].location = game.map.startSpaces[i];
+		}
+	}
 }

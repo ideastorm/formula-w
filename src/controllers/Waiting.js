@@ -16,10 +16,34 @@
 
 'use strict';
 
-angular.module('FormulaW').controller('Host', ['$scope', '$location', '$routeParams', 'Messaging', 'Games', 'player', function ($scope, $location, $routeParams, Messaging, Games, player) {
-		$scope.mapName = 'Monaco';
+angular.module('FormulaW').filter('prettifyFileName', function () {
+	function prettifyFileName(input) {
+		input = input.replace('.png', '');
+		var result = '';
+		var lastChar = ' ';
+		for (var i = 0; i < input.length; i++) {
+			var char = input.charAt(i);
+			if (char === '_')
+				char = ' ';
+			if (lastChar === ' ')
+				char = char.toUpperCase();
+			result += char;
+			lastChar = char;
+		}
+
+		return result;
+	}
+	return prettifyFileName;
+});
+angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$routeParams', 'Messaging', 'Games', 'player', function ($scope, $location, $routeParams, Messaging, Games, player) {
 		$scope.player = player;
 		$scope.starting = false;
+		$scope.mapNames = [];
+		for (var mapName in require('../../shared/maps'))
+			$scope.mapNames.push(mapName);
+		$scope.mapNames.sort();
+		$scope.mapName = 'Monaco';
+		$scope.cars = require('../../shared/cars');
 
 		$scope.kick = function (otherPlayer) {
 			if ($scope.hosting())
@@ -33,7 +57,7 @@ angular.module('FormulaW').controller('Host', ['$scope', '$location', '$routePar
 
 		$scope.isMe = function (user) {
 			return user.id === player.userId;
-		}
+		};
 
 		$scope.hosting = function () {
 			return $scope.players
@@ -60,12 +84,16 @@ angular.module('FormulaW').controller('Host', ['$scope', '$location', '$routePar
 				return true;
 			}
 			return false;
-		}
+		};
 
 		$scope.start = function () {
 			if ($scope.hosting() && $scope.playersReady()) {
 				Messaging.send("startGame");
 			}
+		};
+
+		$scope.updateCars = function (car) {
+			Messaging.send("selectCar", car);
 		};
 
 		$scope.$on("$locationChangeStart", function (event) {
@@ -102,13 +130,37 @@ angular.module('FormulaW').controller('Host', ['$scope', '$location', '$routePar
 			$scope.$apply(function () {
 				$scope.players = data.players;
 				$scope.map = data.map;
+
+				for (var i = 0; i < $scope.players.length; i++)
+					_removeCar($scope.players[i].car);
 			});
 		});
+
+		function _removeCar(car)
+		{
+			var index = $scope.cars.indexOf(car);
+			if (index >= 0)
+				$scope.cars.splice(index, 1);
+		}
 
 		if ($location.url() === '/host')
 			Messaging.send("newGame");
 		else {
 			Messaging.send("join", $routeParams.game);
 		}
+
+		Messaging.register("updateCars", function (data) {
+			$scope.$apply(function () {
+				if (data.added) {
+					var index = $scope.cars.indexOf(data.added);
+					if (index < 0)
+						$scope.cars.push(data.added);
+				}
+				if (data.removed) {
+					_removeCar(data.removed);
+				}
+				$scope.cars.sort();
+			});
+		});
 
 	}]);

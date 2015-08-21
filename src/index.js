@@ -24,8 +24,8 @@ angular.module("FormulaW", ['ngRoute', 'ngCookies'])
 				.config(['$routeProvider', function ($routeProvider) {
 						$routeProvider
 										.when('/', {templateUrl: 'partials/browser.html'})
-										.when('/host', {templateUrl: 'partials/host.html'})
-										.when('/join/:game', {templateUrl: 'partials/host.html'})
+										.when('/host', {templateUrl: 'partials/waiting.html'})
+										.when('/join/:game', {templateUrl: 'partials/waiting.html'})
 										.when('/play/:game', {templateUrl: 'partials/game.html'})
 										.otherwise({redirectTo: '/'});
 					}]);
@@ -36,6 +36,6 @@ require('./services/messaging');
 require('./services/player');
 require('./controllers/Header');
 require('./controllers/Browser');
-require('./controllers/Host');
+require('./controllers/Waiting');
 require('./controllers/Game');
 

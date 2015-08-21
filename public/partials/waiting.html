@@ -14,13 +14,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 -->
-<div ng-controller="Host">
+<div ng-controller="Waiting">
 	<h2>Waiting for additional players</h2>
 
 	<div class="fw-div">
 		<h3>Map</h3>
 		<select ng-model="mapName" ng-show="hosting()">
-			<option value="Monaco">Monaco</option>
+			<option ng-repeat="map in mapNames" value="{{map}}">{{map}}</option>
 		</select>
 		<div ng-show="!hosting()">{{mapName}}</div>
 		<img src="maps/{{mapName}}-preview.png">
@@ -31,6 +31,7 @@ limitations under the License.
 			<thead>
 				<tr>
 					<th>Player</th>
+					<th>Car</th>
 					<th>Ready</th>
 					<th></th>
 					<th></th>
@@ -39,6 +40,12 @@ limitations under the License.
 			<tbody>
 				<tr ng-repeat="user in players">
 					<td>{{user.name}}</td>
+					<td>
+						<img class="fw-player-icon" ng-show="user.car" ng-src="cars/{{user.car}}">
+						<select ng-show="isMe(user) && user.ready !== 'Ready'" ng-model="user.car" ng-change="updateCars(user.car)">
+							<option ng-repeat="car in cars" value="{{car}}">{{car | prettifyFileName }}</option>
+						</select>
+					</td>
 					<td>
 						<span ng-show="!isMe(user) || user.ready === 'Ready'">{{user.ready}}</span>
 						<button ng-show="isMe(user) && user.ready !== 'Ready'" ng-click="player.toggleReady()">{{user.ready}}</button>

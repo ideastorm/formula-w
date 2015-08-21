@@ -17,5 +17,5 @@
 'use strict';
 
 module.exports = {
-	Monaco: require('./maps/monaco')
+	Monaco: require('./monaco')
 };

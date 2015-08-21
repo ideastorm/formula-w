@@ -21,6 +21,7 @@ angular.module('FormulaW').factory('player', ['$cookies', 'Messaging', '$rootSco
 			name: '',
 			userId: null,
 			valid: false,
+			findUser: _findUser,
 			toggleReady: _toggleReady
 		};
 
@@ -50,6 +51,15 @@ angular.module('FormulaW').factory('player', ['$cookies', 'Messaging', '$rootSco
 
 		function _toggleReady() {
 			Messaging.send('userReady');
+		}
+
+		function _findUser(playerList) {
+			for (var i = 0; i < playerList.length; i++)
+			{
+				if (playerList[i].id === service.userId)
+					return playerList[i];
+			}
+			return null;
 		}
 
 	}]);

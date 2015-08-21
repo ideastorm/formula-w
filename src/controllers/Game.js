@@ -16,8 +16,8 @@
 
 'use strict';
 
-angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games', 'Messaging', function ($scope, $routeParams, Games, Messaging) {
-		$scope.games = Games;
+angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games', 'Messaging', 'player', function ($scope, $routeParams, Games, Messaging, player) {
+		$scope.games = Games;		
 
 		var gameView = document.getElementById('fw-game-view');
 
@@ -29,11 +29,12 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
 			$scope.$apply(function () {
 				$scope.players = data.players;
 				$scope.map = data.map;
+				$scope.user = player.findUser(data.players);
 
-				setTimeout(function () {
-					gameView.scrollTop = 658;
-					gameView.scrollLeft = 0;
-				}, 1);
+//				setTimeout(function () {
+//					gameView.scrollTop = 658;
+//					gameView.scrollLeft = 0;
+//				}, 1);
 
 			});
 
