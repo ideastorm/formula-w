@@ -82,19 +82,32 @@ angular.module('mapBuilder', [])
 							return deferred.promise;
 						};
 
+						function readAsText(file, scope) {
+							var deferred = $q.defer();
+							var reader = getReader(deferred, scope);
+							reader.readAsText(file);
+
+							return deferred.promise;
+						}
+
 						return {
-							readAsDataUrl: readAsDataURL
+							readAsDataUrl: readAsDataURL,
+							readAsText: readAsText
 						};
 					}])
 				.controller('builder', ['$scope', 'fileReader', function ($scope, fileReader) {
 
 						$scope.mapImage = null;
-						$scope.spacesPlaced = false;
-						$scope.linksMarked = false;
-						$scope.cornersPlaced = false;
-						$scope.startSpacesMarked = false;
-						$scope.mapComplete = false;
+						_resetFlags();
 						$scope.activeCorner = null;
+
+						function _resetFlags() {
+							$scope.spacesPlaced = false;
+							$scope.linksMarked = false;
+							$scope.cornersPlaced = false;
+							$scope.startSpacesMarked = false;
+							$scope.mapComplete = false;
+						}
 
 						function _getMapInfo() {
 							$scope.$apply(function () {
@@ -217,6 +230,8 @@ angular.module('mapBuilder', [])
 								} else if (event.shiftKey) {
 									_removeLink($scope.activeSpace, spaceIndex);
 									$scope.activeSpace.adjacent.push(spaceIndex);
+									_removeLink(space, activeSpaceIndex);
+									$scope.map.spaces[spaceIndex].adjacent.push(activeSpaceIndex);
 									return;
 								}
 							}
@@ -271,6 +286,25 @@ angular.module('mapBuilder', [])
 							$scope.imgClick = _startSpaceClick;
 						};
 
+						$scope.validate = function () {
+							var map = $scope.map;
+							if (!map.name) {
+								alert("No map name");
+								_resetFlags();
+								return;
+							}
+							var spaces = map.spaces;
+							for (var i = 0; i < spaces.length; i++) {
+								var space = spaces[i];
+								if (!space.adjacent.length || !space.moveTargets.length) {
+									alert("space " + i + " is missing links");
+									_resetFlags();
+									return;
+								}
+							}
+							$scope.mapComplete = true;
+						};
+
 						$scope.imgMouseDown = _spacePlacementMouseDown;
 						$scope.finalizeAltEdit = _spacePlacementFinalizeAlt;
 						$scope.updateActiveLocation = _spacePlacementMouseMove;
@@ -314,6 +348,13 @@ angular.module('mapBuilder', [])
 													startSpaces: []
 												};
 												setTimeout(_getMapInfo, 1);
+											});
+						};
+
+						$scope.readMapFile = function () {
+							fileReader.readAsText($scope.file, $scope)
+											.then(function (result) {
+												$scope.map = JSON.parse(result);
 											});
 						};
 

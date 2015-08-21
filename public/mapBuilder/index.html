@@ -57,6 +57,7 @@ limitations under the License.
 				rotation-point: 50% 50%;
 				width:32px;
 				height:32px;
+				box-sizing: border-box;
 				margin-left:-16px;
 				margin-top:-16px;
 			}
@@ -94,6 +95,8 @@ limitations under the License.
 				</div>
 			</div>
 			<div id="dashboard">
+				Restore Map data from file:
+				<div file-input="file" on-change="readMapFile()"></div>
 				Map Info:<br>
 				Width: {{map.width}}<br>
 				Height: {{map.height}}<br>
@@ -130,7 +133,7 @@ limitations under the License.
 				</div>
 				<div ng-show="linksMarked && !startSpacesMarked">
 
-					<button ng-click="mapComplete = true">Done marking start spaces</button>
+					<button ng-click="validate()">Done marking start spaces</button>
 				</div>
 
 				<div ng-show="activeSpace">
