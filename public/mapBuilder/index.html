@@ -67,7 +67,7 @@ limitations under the License.
 			.active-adjacent, .corner-space {
 				border:1px solid red;
 			}
-			.active-move-target {
+			.active-move-target, .pit-stop {
 				border:1px solid green;
 			}
 			.active-shadow {
@@ -133,7 +133,11 @@ limitations under the License.
 				</div>
 				<div ng-show="linksMarked && !startSpacesMarked">
 
-					<button ng-click="validate()">Done marking start spaces</button>
+					<button ng-click="startMarkingPitStops()">Done marking start spaces</button>
+				</div>
+				<div ng-show="startSpacesMarked && !pitStopsMarked">
+
+					<button ng-click="validate()">Done marking pit stops</button>
 				</div>
 
 				<div ng-show="activeSpace">

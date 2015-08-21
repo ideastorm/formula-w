@@ -247,6 +247,15 @@ angular.module('mapBuilder', [])
 								$scope.map.startSpaces.push(spaceIndex);
 						}
 
+						function _pitStopClick(event, space) {
+							var spaceIndex = $scope.spaceIndex(space);
+							var removalIndex = $scope.map.pitStops.indexOf(spaceIndex);
+							if (removalIndex >= 0)
+								$scope.map.pitStops.splice(removalIndex, 1);
+							else
+								$scope.map.pitStops.push(spaceIndex);
+						}
+
 						function _cornerSpaceClick(event, space) {
 							if ($scope.activeCorner) {
 								var spaceIndex = $scope.spaceIndex(space);
@@ -284,6 +293,14 @@ angular.module('mapBuilder', [])
 							$scope.updateActiveLocation = _emptyFn;
 							$scope.imgMouseDown = _emptyFn;
 							$scope.imgClick = _startSpaceClick;
+						};
+
+						$scope.startMarkingPitStops = function () {
+							$scope.startSpacesMarked = true;
+							$scope.finalizeAltEdit = _emptyFn;
+							$scope.updateActiveLocation = _emptyFn;
+							$scope.imgMouseDown = _emptyFn;
+							$scope.imgClick = _pitStopClick;
 						};
 
 						$scope.validate = function () {
@@ -345,7 +362,8 @@ angular.module('mapBuilder', [])
 												$scope.map = {
 													spaces: [],
 													corners: [],
-													startSpaces: []
+													startSpaces: [],
+													pitStops: []
 												};
 												setTimeout(_getMapInfo, 1);
 											});
@@ -355,6 +373,14 @@ angular.module('mapBuilder', [])
 							fileReader.readAsText($scope.file, $scope)
 											.then(function (result) {
 												$scope.map = JSON.parse(result);
+												if (!$scope.map.spaces)
+													$scope.map.spaces = [];
+												if (!$scope.map.corners)
+													$scope.map.corners = [];
+												if (!$scope.map.startSpaces)
+													$scope.map.startSpaces = [];
+												if (!$scope.map.pitStops)
+													$scope.map.pitStops = [];
 											});
 						};
 
