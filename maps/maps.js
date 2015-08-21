@@ -17,18 +17,5 @@
 'use strict';
 
 module.exports = {
-	"name": "Monaco",
-	"width": 3000,
-	"height": 1972,
-	"startingSpaces": [1],
-	"spaces": [
-		{
-			"left": null,
-			"right": 2,
-			"forward": 3,
-			"x": 300,
-			"y": 350,
-			"theta": 60
-		}
-	]
+	Monaco: require('./maps/monaco')
 };
