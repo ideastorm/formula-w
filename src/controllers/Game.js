@@ -17,29 +17,81 @@
 'use strict';
 
 angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games', 'Messaging', 'player', function ($scope, $routeParams, Games, Messaging, player) {
-		$scope.games = Games;		
+        var gameView = document.getElementById('fw-game-view');
+        var game = $scope.game = Games.currentGame;
 
-		var gameView = document.getElementById('fw-game-view');
+        $scope.buildIconStyle = function (player) {
+            var space = Games.currentGame.map.spaces[player.location];
+            return "left:" + space.x + "px;top:" + space.y + "px;" +
+                    "transform:rotate(" + space.theta + "deg);" +
+                    "-webkit-transform:rotate(" + space.theta + "deg)";
+        };
 
-		Messaging.register("currentGame", function (data) {
-			Games.currentGame = data;
-			if (data.players.length === 0)
-				$location.url('/');
+        $scope.recentMessages = [];
 
-			$scope.$apply(function () {
-				$scope.players = data.players;
-				$scope.map = data.map;
-				$scope.user = player.findUser(data.players);
+        $scope.sendChat = function () {
+
+            var message = $scope.chatMessage.trim();
+            if (message) {
+                Messaging.send("chatMessage", message);
+                $scope.chatMessage = '';
+            }
+            return false;
+        };
+
+        Messaging.register("chatMessage", function (message) {
+            var chatBox = document.getElementById("chat-box");
+            $scope.$apply(function () {
+                $scope.recentMessages.push(message);
+                if ($scope.recentMessages.length > 30)
+                    $scope.recentMessages.shift();
+                setTimeout(function () {
+                    chatBox.scrollTop = chatBox.scrollHeight;
+                }, 1);
+            });
+        });
+
+        function _setActivePlayer(playerIndex) {
+            game.activePlayer = playerIndex;
+        }
+
+        Messaging.register("currentGame", function (data) {
+            console.log(data);
+            Games.currentGame = data;
+            game = data;
+            $scope.game = data;
+
+            if (data.players.length === 0)
+                $location.url('/');
+
+            $scope.$apply(function () {
+                $scope.players = data.players;
+                $scope.map = data.map;
+                $scope.user = player.findUser(data.players);
+
+                _scrollToActivePlayer();
 
 //				setTimeout(function () {
 //					gameView.scrollTop = 658;
 //					gameView.scrollLeft = 0;
 //				}, 1);
 
-			});
+            });
 
-		});
+        });
 
-		Messaging.send("join", $routeParams.game);
+        Messaging.send("join", $routeParams.game);
 
-	}]);
+        function _scrollToActivePlayer() {
+            var playerIndex = Games.currentGame.activePlayer;
+            var locationIndex = Games.currentGame.players[playerIndex].location;
+            var location = Games.currentGame.map.spaces[locationIndex];
+            var yOffset = gameView.clientHeight / 2;
+            var xOffset = gameView.clientWidth / 2;
+            setTimeout(function () {
+                gameView.scrollTop = location.y - yOffset;
+                gameView.scrollLeft = location.x - xOffset;
+            }, 1);
+        }
+
+    }]);

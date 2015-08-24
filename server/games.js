@@ -16,20 +16,17 @@
 'use strict';
 
 module.exports.bind = _bind;
-module.exports.setPlayers = function (players) {
-	_players = players;
-}
-module.exports.setIO = function (io) {
-	_io = io;
-}
 
 var _games = [];
 var _players;
 var _io;
 var _playerGames = {};
 var _maps = require('../shared/maps');
+var deepCopy = require('./deepCopy');
 
-function _bind(socket) {
+function _bind(socket, io, players) {
+        _io = io;
+        _players = players;
 	socket.on('queryList', function () {
 		console.log("retrieving list of games");
 		socket.emit('gameList', _getList());
@@ -46,6 +43,7 @@ function _bind(socket) {
 			}
 			if (game) {
 				socket.emit('currentGame', game);
+                                socket.gameId = game.id;
 				socket.join(game.id);
 			}
 		}
@@ -60,6 +58,7 @@ function _bind(socket) {
 			}
 			_playerGames[socket.userId] = gameId;
 			socket.join(gameId);
+                        socket.gameId = gameId;
 			_joinGame(gameId, socket.userId, socket.id);
 		}
 	});
@@ -75,6 +74,7 @@ function _bind(socket) {
 					_playerGames[socket.userId] = null;
 				}
 				socket.join(game.id);
+                                socket.gameId = game.id;
 				_io.to(game.id).emit('currentGame', game);
 			}
 		}
@@ -82,6 +82,7 @@ function _bind(socket) {
 
 	socket.on('leave', function (gameId) {
 		socket.leave(gameId);
+                socket.gameId = null;
 		if (socket.userId) {
 			_playerGames[socket.userId] = null;
 			_removeFromGame(gameId, socket.userId);
@@ -104,7 +105,7 @@ function _bind(socket) {
 			if (game) {
 				game.running = true;
 				game.activePlayer = 0;
-				game.map = _maps[game.mapName];
+				game.map = deepCopy(_maps[game.mapName]);
 				_randomizePlayers(game);
 				_assignStartSpaces(game);
 				_io.to(game.id).emit("currentGame", game);

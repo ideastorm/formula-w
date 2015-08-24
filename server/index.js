@@ -23,8 +23,7 @@ var io = require('socket.io')(http);
 var games = require('./games');
 var players = require('./players');
 var runtime = require('./runtime');
-games.setPlayers(players);
-games.setIO(io);
+var chat = require('./chat');
 
 app.use(express.static('public'));
 
@@ -35,9 +34,10 @@ io.on('connection', function (socket) {
 		socket.emit("userName", players.lookup(data));
 	});
 
-	games.bind(socket);
+	games.bind(socket, io, players);
 	players.bind(socket);
 	runtime.bind(socket, io);
+        chat.bind(socket, io, players);
 
 	socket.on('disconnect', function () {
 

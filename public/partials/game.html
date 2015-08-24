@@ -14,20 +14,34 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 <div ng-controller="Game" class="fullsize">
-	<div id="fw-game-view" class="fw-game-runtime">
-		<div style="background-image: url('maps/{{map.name}}.png'); width:{{map.width}}px; height:{{map.height}}px">
-		</div>
-	</div>
-	<div id="playerDash">
-		Your car: <img class="fw-player-icon" ng-show="user.car" ng-src="cars/{{user.car}}">
-		<h4>Players</h4>
-		<table>
-			<tr ng-repeat="player in players">
-				<td>{{player.name}}</td>
-				<td><img class="fw-player-icon" ng-show="player.car" ng-src="cars/{{player.car}}"></td>
-				<td>{{player.location}}</td>
-			</tr>
-		</table>
+    <div id="fw-game-view" class="fw-game-runtime">
+        <div style="background-image: url('maps/{{map.name}}.png'); width:{{map.width}}px; height:{{map.height}}px; position:relative">
+            <img ng-repeat="player in players" 
+                 class="fw-game-icon" 
+                 ng-show="player.car" 
+                 ng-src="cars/{{player.car}}"
+                 style="{{buildIconStyle(player)}}">
+        </div>
+    </div>
+    <div id="playerDash">
+        Waiting for: {{players[game.activePlayer].name}}<br><br>
+        Your car: <img class="fw-player-icon" ng-show="user.car" ng-src="cars/{{user.car}}">
+        <h4>Players</h4>
+        <table>
+            <tr ng-repeat="player in players">
+                <td>{{player.name}}</td>
+                <td><img class="fw-player-icon" ng-show="player.car" ng-src="cars/{{player.car}}"></td>
+                <td>{{player.location}}</td>
+            </tr>
+        </table>
+        <div>
+            <div id="chat-box">
+                <div ng-repeat="message in recentMessages">{{message.from}}: {{message.message}}</div>
+            </div>
+            <form ng-submit="sendChat()">
+                <input type="text" ng-model="chatMessage"><input type="submit" value="Send">
+            </form>
+        </div>
 
-	</div>
+    </div>
 </div>
