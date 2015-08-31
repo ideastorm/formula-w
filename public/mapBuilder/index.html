@@ -73,6 +73,12 @@ limitations under the License.
 			.active-shadow {
 				opacity: 0.4;
 			}
+                        .innerCorridor {
+                            background:#f00;
+                        }
+                        .outerCorridor {
+                            background:#0f0;
+                        }
 		</style>
   </head>
   <body ng-app="mapBuilder" ng-controller="builder">
@@ -88,7 +94,9 @@ limitations under the License.
 												 'active-adjacent': isAdjacent($index),
 												 'active-move-target': isMoveTarget($index),
 												 'corner-space': isCorner($index),
-												 'start-space': isStartSpace($index)}"
+												 'start-space': isStartSpace($index),
+                                                                                                 'innerCorridor': isInner($index),
+                                                                                                 'outerCorridor': isOuter($index)}"
 							 style="left:{{space.x}}px;top:{{space.y}}px;transform:rotate({{space.theta}}deg)"
 							 ng-mousedown="imgMouseDown($event, space)"
 							 ng-click="imgClick($event, space)">
@@ -137,7 +145,15 @@ limitations under the License.
 				</div>
 				<div ng-show="startSpacesMarked && !pitStopsMarked">
 
-					<button ng-click="validate()">Done marking pit stops</button>
+					<button ng-click="startMarkingInnerCorridor()">Done marking pit stops</button>
+				</div>
+				<div ng-show="pitStopsMarked && !insideMarked">
+
+					<button ng-click="startMarkingOuterCorridor()">Done marking inner corridor</button>
+				</div>
+				<div ng-show="insideMarked && !outsideMarked">
+
+					<button ng-click="validate()">Done marking outer corridor</button>
 				</div>
 
 				<div ng-show="activeSpace">
@@ -153,7 +169,7 @@ limitations under the License.
 		{{map| json}}
 			</pre>
 		</div>
-		<script src="//ajax.googleapis.com/ajax/libs/angularjs/1.4.4/angular.min.js"></script>
+		<script src="angular.js"></script>
 		<script src="index.js"></script>
   </body>
 </html>
