@@ -46,18 +46,22 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 		$scope.cars = require('../../shared/cars');
 
 		$scope.kick = function (otherPlayer) {
-			if ($scope.hosting())
+			if ($scope.hosting() && !$scope.isRunning())
 				Messaging.send("kick", {gameId: Games.currentGame.id, userId: otherPlayer.id});
 		};
 
 		$scope.ban = function (otherPlayer) {
-			if ($scope.hosting())
+			if ($scope.hosting() && !$scope.isRunning())
 				Messaging.send("ban", {gameId: Games.currentGame.id, userId: otherPlayer.id});
 		};
 
 		$scope.isMe = function (user) {
 			return user.id === player.userId;
 		};
+                
+                $scope.isRunning = function () {
+                    return $scope.game.running;
+                }
 
 		$scope.hosting = function () {
 			return $scope.players
@@ -97,6 +101,8 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 		};
 
 		$scope.$on("$locationChangeStart", function (event) {
+                        if ($scope.isRunning())
+                            return;
 			var message;
 			if ($scope.starting)
 				return;
@@ -128,6 +134,7 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 				$location.url('/');
 
 			$scope.$apply(function () {
+                                $scope.game = Games.currentGame;
 				$scope.players = data.players;
 				$scope.map = data.map;
 

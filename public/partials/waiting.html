@@ -47,8 +47,8 @@ limitations under the License.
 						</select>
 					</td>
 					<td>
-						<span ng-show="!isMe(user) || user.ready === 'Ready'">{{user.ready}}</span>
-						<button ng-show="isMe(user) && user.ready !== 'Ready'" ng-click="player.toggleReady()">{{user.ready}}</button>
+						<span ng-show="!isMe(user) || user.ready === 'Ready' || !user.car">{{user.ready}}</span>
+						<button ng-show="isMe(user) && user.ready !== 'Ready' && user.car" ng-click="player.toggleReady()">{{user.ready}}</button>
 					</td>
 					<td><button ng-show="hosting()" ng-click="kick(user)">Kick</button></td>
 					<td><button ng-show="hosting()" ng-click="ban(user)">Ban</button></td>

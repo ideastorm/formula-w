@@ -36,7 +36,7 @@ io.on('connection', function (socket) {
 
 	games.bind(socket, io, players);
 	players.bind(socket);
-	runtime.bind(socket, io);
+	runtime.bind(socket, io, games);
         chat.bind(socket, io, players);
 
 	socket.on('disconnect', function () {

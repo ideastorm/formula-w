@@ -17,29 +17,62 @@ limitations under the License.
     <div id="fw-game-view" class="fw-game-runtime">
         <div style="background-image: url('maps/{{map.name}}.png'); width:{{map.width}}px; height:{{map.height}}px; position:relative">
             <img ng-repeat="player in players" 
-                 class="fw-game-icon" 
+                 class="fw-game-icon animate-move" 
                  ng-show="player.car" 
                  ng-src="cars/{{player.car}}"
                  style="{{buildIconStyle(player)}}">
+            <img ng-repeat="moveOption in moveOptions"
+                 class="fw-game-icon"
+                 ng-src="markers/{{damageIndex(moveOption.brakingDamage)}}.png"
+                 ng-click="selectMoveOption($index)"
+                 style="{{buildIconStyle(moveOption)}}"
+                 title="{{moveOption}}">
         </div>
     </div>
     <div id="playerDash">
-        Waiting for: {{players[game.activePlayer].name}}<br><br>
-        Your car: <img class="fw-player-icon" ng-show="user.car" ng-src="cars/{{user.car}}">
+        Waiting for: {{players[game.activePlayer].name}}
+        <img class="fw-player-icon" ng-show="players[game.activePlayer].car" ng-src="cars/{{players[game.activePlayer].car}}"><br>
         <h4>Players</h4>
         <table>
             <tr ng-repeat="player in players">
                 <td>{{player.name}}</td>
-                <td><img class="fw-player-icon" ng-show="player.car" ng-src="cars/{{player.car}}"></td>
+                <td>
+                    <div style="position:relative;width:32px">
+                        <img class="fw-player-icon" ng-show="player.car" ng-src="cars/{{player.car}}" style="position:absolute;top:-16px;left:0px">
+                    </div>
+                </td>
+                <td>{{player.lap}}</td>
                 <td>{{player.location}}</td>
             </tr>
         </table>
-        <div>
+        <h4>Car Condition</h4>
+        <div ng-show="game.advanced">
+            Engine: {{user.damage.engine}}<br>
+            Transmission: {{user.damage.transmission}}<br>
+            Tires: {{user.damage.tires}}<br>
+            Brakes: {{user.damage.brakes}}<br>
+            Suspension: {{user.damage.suspension}}<br>
+            Body: {{user.damage.body}}
+        </div>
+        <div ng-show="!game.advanced">
+            {{user.damage}} Damage Points
+        </div>
+        <h4>Gear</h4>
+        <form>
+            <input type="radio" name="gear" value="1" ng-model="gear">1
+            <input type="radio" name="gear" value="3" ng-disabled="user.activeGear < 2" ng-model="gear">3
+            <input type="radio" name="gear" value="5" ng-disabled="user.activeGear < 4" ng-model="gear">5<br>
+            <input type="radio" name="gear" value="2" ng-disabled="user.activeGear < 1" ng-model="gear">2
+            <input type="radio" name="gear" value="4" ng-disabled="user.activeGear < 3" ng-model="gear">4
+            <input type="radio" name="gear" value="6" ng-disabled="user.activeGear < 5" ng-model="gear">6<br>
+        </form>
+        <button ng-show="myTurn && !user.gearSelected" ng-click="selectGear()">Select Gear</button>
+        <div id="chat-window">
             <div id="chat-box">
                 <div ng-repeat="message in recentMessages">{{message.from}}: {{message.message}}</div>
             </div>
             <form ng-submit="sendChat()">
-                <input type="text" ng-model="chatMessage"><input type="submit" value="Send">
+                <input id="chat-entry" type="text" ng-model="chatMessage"><input type="submit" value="Send">
             </form>
         </div>
 

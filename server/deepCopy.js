@@ -36,11 +36,11 @@ function _deepCopyAny(source) {
     var srcType = typeof source;
     if (srcType === 'undefined' || srcType === 'number' || srcType === 'string')
         return source;
-    if (srcType === 'array')
+    if (srcType === 'array' || (srcType === 'object' && typeof source.length === 'number' && typeof source.push === 'function'))
         return _deepCopyArray(source);
     if (srcType === 'object')
         return _deepCopyObject(source);
-    console.log('Got type ' + (typeof source));
+    console.log('Got type ' + srcType);
     return source;
 }
 

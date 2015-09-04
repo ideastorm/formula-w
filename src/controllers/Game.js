@@ -19,16 +19,35 @@
 angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games', 'Messaging', 'player', function ($scope, $routeParams, Games, Messaging, player) {
         var gameView = document.getElementById('fw-game-view');
         var game = $scope.game = Games.currentGame;
-
-        $scope.buildIconStyle = function (player) {
-            var space = Games.currentGame.map.spaces[player.location];
-            return "left:" + space.x + "px;top:" + space.y + "px;" +
-                    "transform:rotate(" + space.theta + "deg);" +
-                    "-webkit-transform:rotate(" + space.theta + "deg)";
+        var messageQueue = [];
+        var moving = false;
+        $scope.gear = 1;
+        $scope.buildIconStyle = function (item) {
+            var space;
+            if (typeof item.location === 'number') {
+                space = game.map.spaces[item.location];
+            } else if (typeof item.space === 'number') {
+                space = game.map.spaces[item.space];
+            }
+            var left = space.x;
+            var top = space.y;
+            var theta = space.theta;
+            return "left:" + left + "px;top:" + top + "px;" +
+                    "transform:rotate(" + theta + "deg);" +
+                    "-webkit-transform:rotate(" + theta + "deg)";
         };
-
+        $scope.damageIndex = function (damage) {
+            if (damage > 5)
+                return 5;
+            if (damage < 0)
+                return 0;
+            return damage;
+        };
+        $scope.selectMoveOption = function (moveOptionIndex) {
+            Messaging.send("selectMove", moveOptionIndex);
+            $scope.moveOptions = null;
+        };
         $scope.recentMessages = [];
-
         $scope.sendChat = function () {
 
             var message = $scope.chatMessage.trim();
@@ -38,60 +57,151 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
             }
             return false;
         };
+        function _processMessage(message) {
+            var chatBox = document.getElementById("chat-box");
+            $scope.recentMessages.push(message);
+            if ($scope.recentMessages.length > 30)
+                $scope.recentMessages.shift();
+            setTimeout(function () {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1);
+        }
 
         Messaging.register("chatMessage", function (message) {
-            var chatBox = document.getElementById("chat-box");
             $scope.$apply(function () {
-                $scope.recentMessages.push(message);
-                if ($scope.recentMessages.length > 30)
-                    $scope.recentMessages.shift();
-                setTimeout(function () {
-                    chatBox.scrollTop = chatBox.scrollHeight;
-                }, 1);
+                _processMessage(message);
             });
         });
 
+        Messaging.register("currentPlayer", function (index) {
+            $scope.$apply(function () {
+                console.log("updating active player");
+                _setActivePlayer(index);
+            });
+        });
+        
         function _setActivePlayer(playerIndex) {
             game.activePlayer = playerIndex;
+            $scope.myTurn = (game.players[playerIndex].id === $scope.user.id);
+            $scope.gearSelected = false;
+            if ($scope.myTurn) {
+                _processMessage({from: 'System', message: "It's your turn"});
+            }
+            if (!moving)
+                _scrollToActivePlayer();
         }
 
+        $scope.selectGear = function () {
+            Messaging.send("chatMessage", "I'm using gear " + $scope.gear);
+            Messaging.send("gearSelect", $scope.gear);
+            $scope.gearSelected = true;
+        };
+        
+        function _processMoveOptions(moveOptions) {
+            $scope.gearSelected = true;
+            $scope.moveOptions = moveOptions;
+        }
+
+        function _processPlayerUpdate(players) {
+            game.players = players;
+            $scope.players = players;
+            $scope.user = player.findUser(players);
+            $scope.gear = $scope.user.activeGear;
+            if ($scope.myTurn && $scope.user.gearSelected) {
+                _processMoveOptions($scope.user.moveOptions);
+            }
+
+            _scrollToActivePlayer();
+        }
+
+        Messaging.register("updatePlayers", function (data) {
+            messageQueue.push(function updatePlayers() {
+                if (moving) {
+                    messageQueue.push(updatePlayers);
+                    _processMessageQueue();
+                } else {
+                    console.log("updating player list");
+                    _processPlayerUpdate(data);
+                }
+            });
+            _processMessageQueue();
+        });
         Messaging.register("currentGame", function (data) {
             console.log(data);
             Games.currentGame = data;
             game = data;
             $scope.game = data;
-
             if (data.players.length === 0)
                 $location.url('/');
-
             $scope.$apply(function () {
-                $scope.players = data.players;
                 $scope.map = data.map;
-                $scope.user = player.findUser(data.players);
-
-                _scrollToActivePlayer();
-
-//				setTimeout(function () {
-//					gameView.scrollTop = 658;
-//					gameView.scrollLeft = 0;
-//				}, 1);
-
+                _processPlayerUpdate(data.players);
+                _setActivePlayer(game.activePlayer);
             });
-
         });
+        var _processingQueue = false;
+        var _queueRetry;
+        function _processMessageQueue() {
+            console.log("checking queue");
+            if (_processingQueue) {
+                clearTimeout(_queueRetry);
+                _queueRetry = setTimeout(_processMessageQueue, 550);
+                return;
+            }
+            _processingQueue = true;
+            var message = messageQueue.shift();
+            if (typeof message === 'function')
+                $scope.$apply(message);
+            _processingQueue = false;
+        }
 
+        Messaging.register("activePlayerMove", function (path) {
+            var playerIndex = game.activePlayer;
+            var player = game.players[playerIndex];
+            for (var i = 0; i < path.length; i++) {
+                messageQueue.push(buildMove(i));
+            }
+
+            function buildMove(index) {
+                return function nextMove() {
+                    if (moving) {
+                        messageQueue.unshift(nextMove);
+                        _processMessageQueue();
+                    } else {
+                        console.log("moving to next space in path");
+                        _nextSpace(path[index]);
+                    }
+                };
+            }
+
+            function _nextSpace(location) {
+                console.log({old: player.location, _new: location, start: Date.now()});
+                if (player.location > location)
+                    player.lap++;
+                player.location = location;
+                _scrollTo(location);
+                _processMessageQueue();
+            }
+        });
         Messaging.send("join", $routeParams.game);
-
-        function _scrollToActivePlayer() {
-            var playerIndex = Games.currentGame.activePlayer;
-            var locationIndex = Games.currentGame.players[playerIndex].location;
-            var location = Games.currentGame.map.spaces[locationIndex];
+        
+        function _scrollTo(locationIndex) {
+            var location = game.map.spaces[locationIndex];
             var yOffset = gameView.clientHeight / 2;
             var xOffset = gameView.clientWidth / 2;
+            var left = location.x - xOffset;
+            var top = location.y - yOffset;
             setTimeout(function () {
-                gameView.scrollTop = location.y - yOffset;
-                gameView.scrollLeft = location.x - xOffset;
+                gameView.scrollTop = top;
+                gameView.scrollLeft = left;
             }, 1);
+        }
+        
+        function _scrollToActivePlayer() {
+            var playerIndex = game.activePlayer;
+            var player = game.players[playerIndex];
+            var locationIndex = player.location;
+            _scrollTo(locationIndex);
         }
 
     }]);

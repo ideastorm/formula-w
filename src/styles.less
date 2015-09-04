@@ -24,6 +24,7 @@ limitations under the License.
 @borders: @header - #111;
 @borderHighlight: @borders + #222;
 @text: black;
+@dashWidth: 200px;
 
 html, body, .fullsize {
     width: 100%;
@@ -45,8 +46,10 @@ body {
     overflow: hidden;
 }
 
-.h2 {
+h2, h3, h4, h5 {
     text-align:center;
+    margin-bottom: 0px;
+    margin-top: 0.5em;
 }
 
 table {
@@ -164,8 +167,8 @@ button:hover {
     position:absolute;
     right:0px;
     top:32px;
-    width:200px;
-    height:100%;
+    bottom:0px;
+    width:@dashWidth;
     background-color:#ddd;
 }
 
@@ -189,6 +192,25 @@ button:hover {
     text-align: left;
     border: 1px solid @borders;
     background: #fff;
-    height:300px;
+    height:200px;
     overflow:auto;
+    padding:4px 2px;
+}
+
+#chat-window {
+    position:absolute;
+    bottom:4px;
+    right:8px;
+    width:@dashWidth - 14;
+}
+
+#chat-entry {
+    width:@dashWidth - 72;
+}
+
+.animate-move {
+    -webkit-transition: 0.45s linear all;
+    -moz-transition: 0.45s linear all;
+    -o-transition: 0.45s linear all;
+    transition:0.45s linear all;
 }
