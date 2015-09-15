@@ -169,15 +169,12 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
                         messageQueue.unshift(nextMove);
                         _processMessageQueue();
                     } else {
-                        console.log("moving to next space in path");
                         _nextSpace(path[index]);
                     }
                 };
             }
 
             function _nextSpace(location) {
-                _scrollTo(player.location);
-                console.log({old: player.location, _new: location, start: Date.now()});
                 if (player.location > location)
                     player.lap++;
                 player.location = location;

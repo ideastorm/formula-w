@@ -330,16 +330,13 @@ angular.module('mapBuilder', [])
                     var map = $scope.map;
                     if (!map.name) {
                         alert("No map name");
-                        _resetFlags();
-                        return;
                     }
                     var spaces = map.spaces;
                     for (var i = 0; i < spaces.length; i++) {
                         var space = spaces[i];
                         if (!space.adjacent.length || !space.moveTargets.length) {
                             alert("space " + i + " is missing links");
-                            _resetFlags();
-                            return;
+							break;
                         }
                     }
                     $scope.mapComplete = true;
