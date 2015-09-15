@@ -39,20 +39,43 @@ module.exports.bind = function (socket, io, games) {
         if (playerIndex === game.activePlayer) {
             var player = game.players[playerIndex];
             var move = player.moveOptions[selectedMove];
-            if (move.space < player.location)
+            if (move.space < player.location) {
                 player.lap++;
+            }
             io.to(game.id).emit("activePlayerMove", move.path);
+            _applyDamage(game, player, move, io);
             player.location = move.space;
             player.allowIn = move.allowIn;
             player.allowOut = move.allowOut;
+            if (player.corner && player.corner === move.corner)
+                player.cornerStops++;
+            else {
+                player.corner = move.corner;
+                if (move.corner)
+                    player.cornerStops = 1;
+                else
+                    player.cornerStops = 0;
+            }
             player.moveOptions = [];
-            if (!game.playerOrder.length)
+            if (!game.playerOrder.length) {
+                console.log("Recycling player list");
                 _sortPlayers(game);
+            }
             game.activePlayer = game.playerOrder.shift();
+            if (player.lap >= game.laps) {
+                console.log(player.lap + " " + game.laps);
+                io.to(game.id).emit("gameOver", {winner: player.name});
+                game.running = false;
+            }
             console.log("active player: " + game.activePlayer);
-            game.players[game.activePlayer].gearSelected = false;
-            io.to(game.id).emit("updatePlayers", game.players);
-            io.to(game.id).emit("currentPlayer", game.activePlayer);
+            if (typeof game.activePlayer === 'number') {
+                game.players[game.activePlayer].gearSelected = false;
+                io.to(game.id).emit("updatePlayers", game.players);
+                io.to(game.id).emit("currentPlayer", game.activePlayer);
+            } else {
+                io.to(game.id).emit("gameOver", {winner: null});
+                game.running = false;
+            }
         }
     });
 };
@@ -115,27 +138,37 @@ function _movementPoints(gear) {
 
 function _calculateMoveOptions(game, player, socket, io) {
     var map = game.map;
+    var corners = map.corners;
     var playerLocations = _getPlayerLocations(game.players);
     var movePoints = _movementPoints(player.activeGear);
     var touchedSpaces = 0;
-    console.log(player.name+" rolled a "+movePoints+", calculating move options");
+    console.log(player.name + " rolled a " + movePoints + ", calculating move options");
     io.to(game.id).emit("chatMessage", {from: player.name, message: "I rolled a " + movePoints});
     var availableSpaces = [];
-    var workQueue = [{space: player.location, distance: 0, path: [], swerve: 0, allowIn: player.allowIn, allowOut: player.allowOut}];
+    var workQueue = [{space: player.location,
+            distance: 0,
+            path: [],
+            swerve: 0,
+            allowIn: player.allowIn,
+            allowOut: player.allowOut,
+            corner: player.currentCorner,
+            cornerStops: player.cornerStops,
+            cornerDamage: 0,
+            addCornerDamage: 0}];
     var lastDistance = 0;
     var locationsThisDistance = [];
     _processQueue();
 
     function _processQueue() {
         touchedSpaces++;
-        
+
         var entry = workQueue.shift();
         if (entry.distance + 1 > lastDistance) {
-            lastDistance = entry.distance+1;
+            lastDistance = entry.distance + 1;
             locationsThisDistance = [];
-            console.log("starting work on spaces at distance "+lastDistance+" ("+touchedSpaces+" spaces already processed)");
+            console.log("starting work on spaces at distance " + lastDistance + " (" + touchedSpaces + " spaces already processed)");
         }
-        
+
         var space = map.spaces[entry.space];
 
         var swerveIndex = 0;
@@ -178,25 +211,57 @@ function _calculateMoveOptions(game, player, socket, io) {
 
         function _pushOption(spaceIndex, isSwerve) {
             var distance = entry.distance + 1;
+            var processDownstream = distance < movePoints;
+            var brakingDamage = Math.max(0, movePoints - distance);
+            var tireDamage = Math.max(0, Math.min(brakingDamage - 3, 3));
+            var brakeDamage = Math.min(brakingDamage, 3);
+            var destroy = brakingDamage > 6;
             var newPath = deepCopy(entry.path);
             newPath.push(spaceIndex);
             var nextEntry = {
                 space: spaceIndex,
-                brakingDamage: movePoints - distance,
-                totalDamage: movePoints - distance,
+                brakingDamage: brakeDamage,
+                tireDamage: tireDamage,
+                totalDamage: brakeDamage + tireDamage,
+                destroy: destroy,
                 distance: distance,
                 path: newPath,
                 swerve: isSwerve,
                 allowIn: (space.corner ? true : entry.allowIn),
-                allowOut: (space.corner ? true : entry.allowOut)
+                allowOut: (space.corner ? true : entry.allowOut),
+                cornerStops: entry.cornerStops,
+                addCornerDamage: entry.addCornerDamage
             };
+
+            _processCornerDamage();
+
             if (locationsThisDistance.indexOf(spaceIndex) < 0) {
                 locationsThisDistance.push(spaceIndex);
                 availableSpaces.push(nextEntry);
-                if (distance < movePoints)
+                if (processDownstream)
                     workQueue.push(nextEntry);
             }
             return nextEntry;
+
+            function _processCornerDamage() {
+                var target = map.spaces[spaceIndex];
+                var cornerStops = entry.cornerStops;
+                nextEntry.corner = target.corner;
+                nextEntry.cornerDamage = entry.cornerDamage;
+                if (!target.corner)
+                    nextEntry.cornerStops = 0;
+                if (!target.corner && entry.corner) {
+                    var corner = corners[entry.corner - 1];
+                    if (cornerStops < corner.requiredStops)
+                        nextEntry.addCornerDamage++;
+                    if (cornerStops < corner.requiredStops - 1) {
+                        nextEntry.destroy = true;
+                        processDownstream = false;
+                    }
+                }
+                nextEntry.cornerDamage += nextEntry.addCornerDamage;
+                nextEntry.totalDamage += nextEntry.cornerDamage;
+            }
         }
 
         function _isBlocked(spaceIndex) {
@@ -235,11 +300,34 @@ function _sortPlayers(game) {
     var locations = [];
     for (var i = 0; i < players.length; i++) {
         var player = players[i];
-        locations.push(player.lap * spaces + player.location);
+        if (!player.destroyed)
+            locations.push(player.lap * spaces + player.location);
     }
     var sortedLocations = deepCopy(locations);
     sortedLocations.sort();
     for (var i = sortedLocations.length - 1; i >= 0; i--) {
         game.playerOrder.push(locations.indexOf(sortedLocations[i]));
+    }
+}
+
+function _applyDamage(game, player, move, io) {
+    if (!game.advanced)
+        simpleDamage();
+    else
+        advancedDamage();
+    if (move.destroy) {
+        io.to(game.id).emit("chatMessage", {from: "System", message: player.name + " has destroyed their car."});
+        player.destroyed = true;
+    }
+
+    function simpleDamage() {
+        player.damage -= move.totalDamage;
+        if (player.damage <= 0)
+            move.destroy = true;
+        io.to(game.id).emit("chatMessage", {from: player.name, message: "I took " + move.totalDamage + " damage"});
+    }
+
+    function advancedDamage() {
+        io.to(game.id).emit("chatMessage", {from: "System", message: "Damage for advanced games isn't implemented!"});
     }
 }

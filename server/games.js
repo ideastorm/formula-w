@@ -46,12 +46,12 @@ function _bind(socket, io, players) {
         if (socket.userId) {
             _io.users[socket.userId] = socket.id;
             var game;
-            if (!_playerGames[socket.userId]) {
-                game = _create(socket.userId, socket.id);
-                _playerGames[socket.userId] = game.id;
-            } else {
-                game = _findGame(_playerGames[socket.userId]);
+            if (_playerGames[socket.userId]) {
+                socket.leave(_playerGames[socket.userId]);
+                _removeFromGame(_playerGames[socket.userId], socket.userId);
             }
+            game = _create(socket.userId, socket.id);
+            _playerGames[socket.userId] = game.id;
             if (game) {
                 socket.emit('currentGame', game);
                 socket.gameId = game.id;
@@ -155,10 +155,11 @@ function _create(hostUserId, socketId) {
         mapName: 'Monaco',
         players: [{id: hostUserId, name: _players.lookup(hostUserId), ready: 'Not Ready', socket: socketId, activeGear: 0}],
         banned: [],
-        maxPlayers: 10,
         running: false,
+        laps: 2,
         id: hostUserId + time
     };
+    game.maxPlayers = _maps[game.mapName].startSpaces.length;
     _games.push(game);
     return game;
 }
@@ -260,6 +261,8 @@ function _assignStartSpaces(game) {
             var player = game.players[game.playerOrder[i]];
             player.location = game.map.startSpaces[i];
             player.lap = 0;
+            player.currentCorner = null;
+            player.cornerStops = 0;
             switch (game.map.spaces[player.location].corridor) {
                 case -1:
                     player.allowIn = false;
@@ -338,7 +341,7 @@ function _finalizeMap(map) {
     {
         var corner = map.corners[cornerIndex];
         for (var spaceIndex = 0; spaceIndex < corner.spaces.length; spaceIndex++) {
-            map.spaces[corner.spaces[spaceIndex]].corner = corner;
+            map.spaces[corner.spaces[spaceIndex]].corner = +cornerIndex + 1;
         }
     }
 

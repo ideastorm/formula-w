@@ -23,7 +23,7 @@ limitations under the License.
                  style="{{buildIconStyle(player)}}">
             <img ng-repeat="moveOption in moveOptions"
                  class="fw-game-icon"
-                 ng-src="markers/{{damageIndex(moveOption.brakingDamage)}}.png"
+                 ng-src="markers/{{damageIndex(moveOption.totalDamage)}}.png"
                  ng-click="selectMoveOption($index)"
                  style="{{buildIconStyle(moveOption)}}"
                  title="{{moveOption}}">
@@ -74,6 +74,12 @@ limitations under the License.
             <form ng-submit="sendChat()">
                 <input id="chat-entry" type="text" ng-model="chatMessage"><input type="submit" value="Send">
             </form>
+        </div>
+        <div ng-if="winner && gameOver" class="end-game-modal">
+            <h3>{{winner}} wins!</h3>
+        </div>
+        <div ng-if="gameOver && !winner" class="end-game-modal">
+            <h3>You all lose!</h3>
         </div>
 
     </div>

@@ -21,7 +21,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
         var game = $scope.game = Games.currentGame;
         var messageQueue = [];
         var moving = false;
-        $scope.gear = 1;
+        $scope.gear = 0;
         $scope.buildIconStyle = function (item) {
             var space;
             if (typeof item.location === 'number') {
@@ -79,10 +79,10 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
                 _setActivePlayer(index);
             });
         });
-        
+
         function _setActivePlayer(playerIndex) {
             game.activePlayer = playerIndex;
-            $scope.myTurn = (game.players[playerIndex].id === $scope.user.id);
+            $scope.myTurn = (game.players[playerIndex].id === player.userId);
             $scope.gearSelected = false;
             if ($scope.myTurn) {
                 _processMessage({from: 'System', message: "It's your turn"});
@@ -96,7 +96,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
             Messaging.send("gearSelect", $scope.gear);
             $scope.gearSelected = true;
         };
-        
+
         function _processMoveOptions(moveOptions) {
             $scope.gearSelected = true;
             $scope.moveOptions = moveOptions;
@@ -106,7 +106,8 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
             game.players = players;
             $scope.players = players;
             $scope.user = player.findUser(players);
-            $scope.gear = $scope.user.activeGear;
+            if (!$scope.gear)
+                $scope.gear = $scope.user.activeGear;
             if ($scope.myTurn && $scope.user.gearSelected) {
                 _processMoveOptions($scope.user.moveOptions);
             }
@@ -135,8 +136,8 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
                 $location.url('/');
             $scope.$apply(function () {
                 $scope.map = data.map;
-                _processPlayerUpdate(data.players);
                 _setActivePlayer(game.activePlayer);
+                _processPlayerUpdate(data.players);
             });
         });
         var _processingQueue = false;
@@ -175,16 +176,15 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
             }
 
             function _nextSpace(location) {
+                _scrollTo(player.location);
                 console.log({old: player.location, _new: location, start: Date.now()});
                 if (player.location > location)
                     player.lap++;
                 player.location = location;
-                _scrollTo(location);
                 _processMessageQueue();
             }
         });
-        Messaging.send("join", $routeParams.game);
-        
+
         function _scrollTo(locationIndex) {
             var location = game.map.spaces[locationIndex];
             var yOffset = gameView.clientHeight / 2;
@@ -196,7 +196,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
                 gameView.scrollLeft = left;
             }, 1);
         }
-        
+
         function _scrollToActivePlayer() {
             var playerIndex = game.activePlayer;
             var player = game.players[playerIndex];
@@ -204,4 +204,14 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
             _scrollTo(locationIndex);
         }
 
+        Messaging.register("gameOver", function (data) {
+            $scope.$apply(function () {
+                if (data.winner) {
+                    $scope.winner = data.winner;
+                }
+                $scope.gameOver = true;
+            });
+        });
+
+        Messaging.send("join", $routeParams.game);
     }]);
