@@ -261,6 +261,12 @@ function _calculateMoveOptions(game, player, socket, io) {
 				}
 				nextEntry.cornerDamage += nextEntry.addCornerDamage;
 				nextEntry.totalDamage += nextEntry.cornerDamage;
+				if (!game.advanced) {
+					if (nextEntry.totalDamage >= player.damage) {
+						nextEntry.destroy = true;
+					}
+				} else
+					console.log("Advanced damage not implemented");
 			}
 		}
 
