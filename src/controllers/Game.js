@@ -43,6 +43,12 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
                 return 0;
             return damage;
         };
+		$scope.damageLeft = function (player) {
+			if (!game.advanced) {
+				return player.damage;
+			} else
+				return "Adv. Dmg not implemented";
+		};
         $scope.selectMoveOption = function (moveOptionIndex) {
             Messaging.send("selectMove", moveOptionIndex);
             $scope.moveOptions = null;

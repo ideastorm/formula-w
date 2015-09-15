@@ -244,11 +244,15 @@ angular.module('mapBuilder', [])
                 }
 
                 function _startSpaceClick(event, space) {
-                    _toggleSpace($scope.map.startSpaces);
+					if (!$scope.map.startSpaces)
+						$scope.map.startSpaces = [];
+                    _toggleSpace(space, $scope.map.startSpaces);
                 }
 
                 function _pitStopClick(event, space) {
-                    _toggleSpace(space, $scope.map.pitStops);
+					if (!$scope.map.pitStops)
+						$scope.map.pitStops = [];
+					_toggleSpace(space, $scope.map.pitStops);
                 }
 
                 function _cornerSpaceClick(event, space) {

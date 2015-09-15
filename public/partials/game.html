@@ -34,6 +34,12 @@ limitations under the License.
         <img class="fw-player-icon" ng-show="players[game.activePlayer].car" ng-src="cars/{{players[game.activePlayer].car}}"><br>
         <h4>Players</h4>
         <table>
+			<tr>
+				<th>Player</th>
+				<th>Car</th>
+				<th>Lap</th>
+				<th>Health</th>
+			</tr>
             <tr ng-repeat="player in players">
                 <td>{{player.name}}</td>
                 <td>
@@ -42,7 +48,7 @@ limitations under the License.
                     </div>
                 </td>
                 <td>{{player.lap}}</td>
-                <td>{{player.location}}</td>
+                <td>{{damageLeft(player)}}</td>
             </tr>
         </table>
         <h4>Car Condition</h4>
