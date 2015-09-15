@@ -72,7 +72,17 @@ limitations under the License.
             <input type="radio" name="gear" value="4" ng-disabled="user.activeGear < 3" ng-model="gear">4
             <input type="radio" name="gear" value="6" ng-disabled="user.activeGear < 5" ng-model="gear">6<br>
         </form>
-        <button ng-show="myTurn && !user.gearSelected" ng-click="selectGear()">Select Gear</button>
+		<div ng-show="myTurn && !user.gearSelected">
+			<button ng-click="selectGear()">Select Gear</button><br>
+			Range: 
+			<span ng-show="gear == 1">1-2</span>
+			<span ng-show="gear == 2">2-4</span>
+			<span ng-show="gear == 3">4-8</span>
+			<span ng-show="gear == 4">7-12</span>
+			<span ng-show="gear == 5">11-20</span>
+			<span ng-show="gear == 6">19-30</span>
+			spaces
+		</div>
         <div id="chat-window">
             <div id="chat-box">
                 <div ng-repeat="message in recentMessages">{{message.from}}: {{message.message}}</div>
