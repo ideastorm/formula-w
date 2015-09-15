@@ -162,20 +162,15 @@ angular.module('mapBuilder', [])
 
                 function _spacePlacementMouseMove(event) {
                     if ($scope.activeSpace) {
+						var imgScroll = document.getElementById("imgScroll");
                         if ($scope.adjustRotation || event.ctrlKey) {
                             var dx = event.layerX - $scope.activeSpace.x;
                             var dy = event.layerY - $scope.activeSpace.y;
                             var theta = Math.atan2(dy, dx) * 180 / Math.PI;
                             $scope.activeSpace.theta = theta;
                         } else {
-                            if (event.layerX > 32) {
-                                $scope.activeSpace.x = event.layerX;
-                                $scope.activeSpace.y = event.layerY;
-                            }
-                            else {
-                                $scope.activeSpace.x += event.movementX;
-                                $scope.activeSpace.y += event.movementY;
-                            }
+							$scope.activeSpace.x = event.pageX + imgScroll.scrollLeft;
+							$scope.activeSpace.y = event.pageY + imgScroll.scrollTop;
                         }
                     }
                 }
