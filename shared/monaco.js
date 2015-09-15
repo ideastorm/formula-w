@@ -7232,7 +7232,7 @@ module.exports =
     },
     {
       "name": "La Rascasse",
-      "requiredStops": 1,
+					"requiredStops": 2,
       "spaces": [
         461,
         463,
