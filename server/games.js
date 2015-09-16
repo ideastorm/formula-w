@@ -18,6 +18,7 @@
 module.exports.bind = _bind;
 module.exports.lookup = _lookup;
 module.exports.getPlayerIndex = _findPlayerIndex;
+module.exports.gameOver = _gameOver;
 
 var _games = [];
 var _players;
@@ -204,6 +205,14 @@ function _joinGame(gameId, userId, socketId) {
         _io.emit('gameList', _games);
         _io.to(gameId).emit('currentGame', game);
     }
+}
+
+function _gameOver(game) {
+    var gameIndex= _findGameIndex(game.id);
+    if (gameIndex !== null) {
+        _games.splice(gameIndex,1);
+    }
+    _io.emit('gameList', _games);
 }
 
 function _removeFromGame(gameId, userId) {
