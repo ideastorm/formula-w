@@ -34,6 +34,8 @@ require('./services/debounce');
 require('./services/games');
 require('./services/messaging');
 require('./services/player');
+require('./services/chat');
+require('./services/notifications');
 require('./controllers/Header');
 require('./controllers/Browser');
 require('./controllers/Waiting');
