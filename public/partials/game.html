@@ -27,6 +27,11 @@ limitations under the License.
                  ng-click="selectMoveOption($index)"
                  style="{{buildIconStyle(moveOption)}}"
                  title="{{moveOption}}">
+            <img ng-repeat="moveOption in opponentMoves"
+                 class="fw-game-icon"
+                 ng-src="markers/black.png"
+                 style="{{buildIconStyle(moveOption)}}"
+                 title="{{moveOption}}">
         </div>
     </div>
     <div id="playerDash">

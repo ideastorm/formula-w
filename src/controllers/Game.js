@@ -16,7 +16,7 @@
 
 'use strict';
 
-angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games', 'Messaging', 'player', 'chat', 'notifications', function ($scope, $routeParams, Games, Messaging, player, chat, notifications) {
+angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$location', 'Games', 'Messaging', 'player', 'chat', 'notifications', function ($scope, $routeParams, $location, Games, Messaging, player, chat, notifications) {
 		var gameView = document.getElementById('fw-game-view');
 		var game = $scope.game = Games.currentGame;
 		var messageQueue = [];
@@ -134,6 +134,8 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
 				$scope.gear = $scope.user.activeGear;
 			if ($scope.myTurn && $scope.user.gearSelected) {
 				_processMoveOptions($scope.user.moveOptions);
+			} else if (game.activePlayer !== $scope.user.userId && game.players[game.activePlayer].gearSelected) {
+				$scope.opponentMoves = game.players[game.activePlayer].moveOptions;
 			}
 
 			_scrollToActivePlayer();
@@ -170,7 +172,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
 			console.log("checking queue");
 			if (_processingQueue) {
 				clearTimeout(_queueRetry);
-				_queueRetry = setTimeout(_processMessageQueue, 550);
+				_queueRetry = setTimeout(_processMessageQueue, 200);
 				return;
 			}
 			_processingQueue = true;
@@ -181,11 +183,13 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', 'Games'
 		}
 
 		Messaging.register("activePlayerMove", function (path) {
+			$scope.opponentMoves = [];
 			var playerIndex = game.activePlayer;
 			var player = game.players[playerIndex];
 			for (var i = 0; i < path.length; i++) {
 				messageQueue.push(buildMove(i));
 			}
+			_processMessageQueue();
 
 			function buildMove(index) {
 				return function nextMove() {
