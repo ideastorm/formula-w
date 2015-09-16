@@ -214,10 +214,17 @@ module.exports.bind = function (socket, io, games) {
 			function _pushOption(spaceIndex, isSwerve) {
 				var distance = entry.distance + 1;
 				var processDownstream = distance < movePoints;
+                var damageMsg = "";
 				var brakingDamage = Math.max(0, movePoints - distance);
 				var tireDamage = Math.max(0, Math.min(brakingDamage - 3, 3));
 				var brakeDamage = Math.min(brakingDamage, 3);
+                if (brakeDamage > 0) 
+                    damageMsg = brakeDamage+" brake damage";
+                if (tireDamage > 0)
+                    damageMsg += " and "+tireDamage+" tire damage from braking";
 				var destroy = brakingDamage > 6;
+                if (destroy)
+                    damageMsg = "Braking 7+ spaces destroys your car";
 				var newPath = deepCopy(entry.path);
 				newPath.push(spaceIndex);
 				var nextEntry = {
@@ -226,6 +233,7 @@ module.exports.bind = function (socket, io, games) {
 					tireDamage: tireDamage,
 					totalDamage: brakeDamage + tireDamage,
 					destroy: destroy,
+					damageMsg: damageMsg,
 					distance: distance,
 					path: newPath,
 					swerve: isSwerve,
@@ -257,12 +265,20 @@ module.exports.bind = function (socket, io, games) {
 						if (cornerStops < corner.requiredStops)
 							nextEntry.addCornerDamage++;
 						if (cornerStops < corner.requiredStops - 1) {
+                            nextEntry.damageMsg = "Overshooting a corner by more than 1 required stop destroys your car";
 							nextEntry.destroy = true;
 							processDownstream = false;
 						}
 					}
 					nextEntry.cornerDamage += nextEntry.addCornerDamage;
 					nextEntry.totalDamage += nextEntry.cornerDamage;
+                    if (nextEntry.cornerDamage && !nextEntry.destroy) {
+                        var cornerDamageMsg= nextEntry.cornerDamage+" tire damage from overshooting a corner";
+                        if (nextEntry.damageMsg === "")
+                            nextEntry.damageMsg = cornerDamageMsg;
+                        else
+                            nextEntry.damageMsg+=" and "+cornerDamageMsg;
+                    }
 					if (!game.advanced) {
 						if (nextEntry.totalDamage >= player.damage) {
 							nextEntry.destroy = true;

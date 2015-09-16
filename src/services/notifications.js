@@ -18,7 +18,7 @@
 'use strict';
 
 angular.module('FormulaW').factory("notifications", ['chat', function (chat) {
-
+        var lastNotification;
 		var service = {
 			notify: _notify,
 			requestNotification: _request
@@ -33,8 +33,9 @@ angular.module('FormulaW').factory("notifications", ['chat', function (chat) {
 		return service;
 
 		function _notify(title, message) {
-//			var notify =
-			new Notification(title,
+            if (lastNotification)
+                lastNotification.close();
+			lastNotification = new Notification(title,
 					{
 						icon: "markers/0.png",
 						body: message
