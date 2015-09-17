@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Phillip Hayward <phil@pjhayward.net>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -81,7 +81,6 @@ module.exports.bind = function (socket, io, games) {
 		}
 	});
 
-
 	function _validateAndUpdateGearSelection(game, player, selectedGear) {
 		console.log("desired gear: " + selectedGear);
 		console.log(typeof selectedGear);
@@ -91,9 +90,12 @@ module.exports.bind = function (socket, io, games) {
 		console.log("damage from selecting desired gear: " + damage);
 		var availableDamage = !game.advanced ? player.damage : player.damage.transmission;
 		console.log("available damage: " + availableDamage);
-		if (availableDamage < damage) {
+		if (availableDamage < damage || damage > 3) {
 			console.log("rejecting gear selection");
-			socket.emit("chatMessage", {from: "System", message: "Downshifting to " + selectedGear + " will destroy your car."});
+			socket.emit("chatMessage", {
+				from : "System",
+				message : "Downshifting to " + selectedGear + " would destroy your car, and is not allowed."
+			});
 			return;
 		}
 		console.log("accepting gear selection");
@@ -101,7 +103,10 @@ module.exports.bind = function (socket, io, games) {
 		player.activeGear = selectedGear;
 		if (damage > 0) {
 			console.log("taking damage");
-			io.to(game.id).emit({from: player.name, message: "I took " + damage + " damage for aggressive downshifting"});
+			io.to(game.id).emit({
+				from : player.name,
+				message : "I took " + damage + " damage for aggressive downshifting"
+			});
 			if (!game.advanced) {
 				player.damage -= damage;
 			} else {
@@ -113,26 +118,26 @@ module.exports.bind = function (socket, io, games) {
 	function _movementPoints(gear) {
 		var options;
 		switch (gear) {
-			case 1:
-				options = [1, 2];
-				break;
-			case 2:
-				options = [2, 3, 4];
-				break;
-			case 3:
-				options = [4, 5, 6, 7, 8];
-				break;
-			case 4:
-				options = [7, 8, 9, 10, 11, 12];
-				break;
-			case 5:
-				options = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
-				break;
-			case 6:
-				options = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
-				break;
-			default:
-				return 1;
+		case 1:
+			options = [1, 2];
+			break;
+		case 2:
+			options = [2, 3, 4];
+			break;
+		case 3:
+			options = [4, 5, 6, 7, 8];
+			break;
+		case 4:
+			options = [7, 8, 9, 10, 11, 12];
+			break;
+		case 5:
+			options = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+			break;
+		case 6:
+			options = [19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30];
+			break;
+		default:
+			return 1;
 		}
 		var index = Math.floor(Math.random() * options.length);
 		return options[index];
@@ -145,18 +150,24 @@ module.exports.bind = function (socket, io, games) {
 		var movePoints = _movementPoints(player.activeGear);
 		var touchedSpaces = 0;
 		console.log(player.name + " rolled a " + movePoints + ", calculating move options");
-		io.to(game.id).emit("chatMessage", {from: player.name, message: "I rolled a " + movePoints});
+		io.to(game.id).emit("chatMessage", {
+			from : player.name,
+			message : "I rolled a " + movePoints
+		});
 		var availableSpaces = [];
-		var workQueue = [{space: player.location,
-				distance: 0,
-				path: [],
-				swerve: 0,
-				allowIn: player.allowIn,
-				allowOut: player.allowOut,
-				corner: player.currentCorner,
-				cornerStops: player.cornerStops,
-				cornerDamage: 0,
-				addCornerDamage: 0}];
+		var workQueue = [{
+				space : player.location,
+				distance : 0,
+				path : [],
+				swerve : 0,
+				allowIn : player.allowIn,
+				allowOut : player.allowOut,
+				corner : player.currentCorner,
+				cornerStops : player.cornerStops,
+				cornerDamage : 0,
+				addCornerDamage : 0
+			}
+		];
 		var lastDistance = 0;
 		var locationsThisDistance = [];
 		_processQueue();
@@ -201,8 +212,7 @@ module.exports.bind = function (socket, io, games) {
 
 			if (workQueue.length)
 				setTimeout(_processQueue, 1);
-			else
-			{
+			else {
 				console.log("processed " + touchedSpaces + " spaces and found " + availableSpaces.length + " options");
 				_mergeOptions(availableSpaces);
 				console.log("merged available options, " + availableSpaces.length + " now available");
@@ -214,36 +224,45 @@ module.exports.bind = function (socket, io, games) {
 			function _pushOption(spaceIndex, isSwerve) {
 				var distance = entry.distance + 1;
 				var processDownstream = distance < movePoints;
-                var damageMsg = "";
+				var damageMsg = "";
 				var brakingDamage = Math.max(0, movePoints - distance);
 				var tireDamage = Math.max(0, Math.min(brakingDamage - 3, 3));
 				var brakeDamage = Math.min(brakingDamage, 3);
-                if (brakeDamage > 0) 
-                    damageMsg = brakeDamage+" brake damage";
-                if (tireDamage > 0)
-                    damageMsg += " and "+tireDamage+" tire damage from braking";
+				if (brakeDamage > 0)
+					damageMsg = brakeDamage + " brake damage";
+				if (tireDamage > 0)
+					damageMsg += " and " + tireDamage + " tire damage from braking";
 				var destroy = brakingDamage > 6;
-                if (destroy)
-                    damageMsg = "Braking 7+ spaces destroys your car";
+				if (destroy)
+					damageMsg = "Braking 7+ spaces destroys your car";
 				var newPath = deepCopy(entry.path);
 				newPath.push(spaceIndex);
 				var nextEntry = {
-					space: spaceIndex,
-					brakingDamage: brakeDamage,
-					tireDamage: tireDamage,
-					totalDamage: brakeDamage + tireDamage,
-					destroy: destroy,
-					damageMsg: damageMsg,
-					distance: distance,
-					path: newPath,
-					swerve: isSwerve,
-					allowIn: (space.corner ? true : entry.allowIn),
-					allowOut: (space.corner ? true : entry.allowOut),
-					cornerStops: entry.cornerStops,
-					addCornerDamage: entry.addCornerDamage
+					space : spaceIndex,
+					brakingDamage : brakeDamage,
+					tireDamage : tireDamage,
+					totalDamage : brakeDamage + tireDamage,
+					destroy : destroy,
+					damageMsg : damageMsg,
+					distance : distance,
+					path : newPath,
+					swerve : isSwerve,
+					allowIn : (space.corner ? true : entry.allowIn),
+					allowOut : (space.corner ? true : entry.allowOut),
+					cornerStops : entry.cornerStops,
+					addCornerDamage : entry.addCornerDamage
 				};
 
 				_processCornerDamage();
+                
+                if (_isMyPitStop(player, spaceIndex)) {
+                    nextEntry.brakingDamage = 0;
+                    nextEntry.tireDamage = 0;
+                    nextEntry.totalDamage = 0;
+                    nextEntry.destroy = false;
+                    nextEntry.damageMsg = "Pit Stop: Tire damage repaired!";                    
+                    processDownstream = false;
+                }
 
 				if (locationsThisDistance.indexOf(spaceIndex) < 0) {
 					locationsThisDistance.push(spaceIndex);
@@ -265,20 +284,20 @@ module.exports.bind = function (socket, io, games) {
 						if (cornerStops < corner.requiredStops)
 							nextEntry.addCornerDamage++;
 						if (cornerStops < corner.requiredStops - 1) {
-                            nextEntry.damageMsg = "Overshooting a corner by more than 1 required stop destroys your car";
+							nextEntry.damageMsg = "Overshooting a corner by more than 1 required stop destroys your car";
 							nextEntry.destroy = true;
 							processDownstream = false;
 						}
 					}
 					nextEntry.cornerDamage += nextEntry.addCornerDamage;
 					nextEntry.totalDamage += nextEntry.cornerDamage;
-                    if (nextEntry.cornerDamage && !nextEntry.destroy) {
-                        var cornerDamageMsg= nextEntry.cornerDamage+" tire damage from overshooting a corner";
-                        if (nextEntry.damageMsg === "")
-                            nextEntry.damageMsg = cornerDamageMsg;
-                        else
-                            nextEntry.damageMsg+=" and "+cornerDamageMsg;
-                    }
+					if (nextEntry.cornerDamage && !nextEntry.destroy) {
+						var cornerDamageMsg = nextEntry.cornerDamage + " tire damage from overshooting a corner";
+						if (nextEntry.damageMsg === "")
+							nextEntry.damageMsg = cornerDamageMsg;
+						else
+							nextEntry.damageMsg += " and " + cornerDamageMsg;
+					}
 					if (!game.advanced) {
 						if (nextEntry.totalDamage >= player.damage) {
 							nextEntry.destroy = true;
@@ -287,18 +306,21 @@ module.exports.bind = function (socket, io, games) {
 						console.log("Advanced damage not implemented");
 				}
 			}
-                        
-                        function _isMyPitStop(playerIndex, spaceIndex) {
-                            return map.pitStops.indexOf(spaceIndex) === playerIndex;
-                        }
-                        
+            
+			function _isMyPitStop(playerInfo, spaceIndex) {
+                var playerIndex;
+                if (typeof playerInfo === 'number')
+                    playerIndex = playerInfo;
+                else
+                    playerIndex = game.players.indexOf(playerInfo);
+				return map.pitStops.indexOf(spaceIndex) === playerIndex;
+			}
+
 			function _isBlocked(spaceIndex) {
-                            var blockingPlayerIndex = playerLocations.indexOf(spaceIndex);
+				var blockingPlayerIndex = playerLocations.indexOf(spaceIndex);
 				return blockingPlayerIndex >= 0 && !_isMyPitStop(blockingPlayerIndex, spaceIndex);
 			}
 		}
-
-
 
 		function _getPlayerLocations(players) {
 			var locations = [];
@@ -349,7 +371,9 @@ module.exports.bind = function (socket, io, games) {
 	}
 
 	function _gameOver(game, winner) {
-		var message = {winner: winner ? winner.name : null};
+		var message = {
+			winner : winner ? winner.name : null
+		};
 		io.to(game.id).emit("gameOver", message);
 		game.running = false;
 		game.players = [];
@@ -363,7 +387,10 @@ module.exports.bind = function (socket, io, games) {
 		else
 			advancedDamage();
 		if (move.destroy) {
-			io.to(game.id).emit("chatMessage", {from: "System", message: player.name + " has destroyed their car."});
+			io.to(game.id).emit("chatMessage", {
+				from : "System",
+				message : player.name + " has destroyed their car."
+			});
 			player.destroyed = true;
 			var remaining = _remainingPlayers(game);
 			if (remaining.count === 1) {
@@ -376,26 +403,43 @@ module.exports.bind = function (socket, io, games) {
 			if (player.damage <= 0)
 				move.destroy = true;
 			if (move.totalDamage > 0)
-				io.to(game.id).emit("chatMessage", {from: player.name, message: "I took " + move.totalDamage + " damage"});
+				io.to(game.id).emit("chatMessage", {
+					from : player.name,
+					message : "I took " + move.totalDamage + " damage"
+				});
 		}
 
 		function advancedDamage() {
-			io.to(game.id).emit("chatMessage", {from: "System", message: "Damage for advanced games isn't implemented!"});
+			io.to(game.id).emit("chatMessage", {
+				from : "System",
+				message : "Damage for advanced games isn't implemented!"
+			});
 		}
 	}
 
 	function _shouldTakeDamage(percentChance) {
 		return Math.random() * 100 <= percentChance;
 	}
+    
 
 	function _adjacentDamage(game, player) {
+        function _isPitStop(spaceIndex) {
+            return game.pitStops.indexOf(spaceIndex) >= 0;
+        }
+    
+        if (_isPitStop(player.location))
+            return;
 		var space = game.map.spaces[player.location];
 		var adjacentSpaces = [];
 		var i;
-		for (i = 0; i < space.adjacent.length; i++)
-			adjacentSpaces.push(space.adjacent[i]);
+		for (i = 0; i < space.adjacent.length; i++) 
+            if (!_isPitStop(space.adjacent[i])
+                adjacentSpaces.push(space.adjacent[i]);
+        
 		for (i = 0; i < space.moveTargets.length; i++)
-			adjacentSpaces.push(space.moveTargets[i]);
+            if (!_isPitStop(space.moveTargets[i])
+                adjacentSpaces.push(space.moveTargets[i]);
+            
 		var adjacentPlayers = [];
 		for (i = 0; i < game.players.length; i++) {
 			if (adjacentSpaces.indexOf(game.players[i].location) >= 0) {
@@ -411,9 +455,15 @@ module.exports.bind = function (socket, io, games) {
 				} else {
 					p.damage.body--;
 				}
-				io.to(game.id).emit("chatMessage", {from: p.name, message: "I take 1 body damage"});
+				io.to(game.id).emit("chatMessage", {
+					from : p.name,
+					message : "I take 1 body damage"
+				});
 			} else
-				io.to(game.id).emit("chatMessage", {from: p.name, message: "No damage for me!"});
+				io.to(game.id).emit("chatMessage", {
+					from : p.name,
+					message : "No damage for me!"
+				});
 		}
 	}
 
