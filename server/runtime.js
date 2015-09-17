@@ -287,9 +287,14 @@ module.exports.bind = function (socket, io, games) {
 						console.log("Advanced damage not implemented");
 				}
 			}
-
+                        
+                        function _isMyPitStop(playerIndex, spaceIndex) {
+                            return map.pitStops.indexOf(spaceIndex) === playerIndex;
+                        }
+                        
 			function _isBlocked(spaceIndex) {
-				return playerLocations.indexOf(spaceIndex) >= 0;
+                            var blockingPlayerIndex = playerLocations.indexOf(spaceIndex);
+				return blockingPlayerIndex >= 0 && !_isMyPitStop(blockingPlayerIndex, spaceIndex);
 			}
 		}
 
