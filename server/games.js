@@ -197,7 +197,7 @@ function _joinGame(gameId, userId, socketId) {
     if (gameIndex !== null) {
         var game = _games[gameIndex];
         var playerIndex = _findPlayerIndex(game, userId);
-        if (playerIndex < 0 && game.banned.indexOf(userId) < 0)
+        if (!game.running  && game.players.length < game.maxPlayers && playerIndex < 0 && game.banned.indexOf(userId) < 0)
         {
             var playerName = _players.lookup(userId);
             game.players.push({id: userId, name: playerName, ready: 'Not Ready', socket: socketId, activeGear: 0});
@@ -319,6 +319,9 @@ function _finalizeMap(map) {
         var spaceInner = _isInner(i);
         var spaceOuter = _isOuter(i);
         space.corridor = spaceInner ? -1 : spaceOuter ? 1 : 0;
+        if (space.moveTargets.length === 1) {
+            space.forward = space.moveTargets[0];
+        } else {
         for (var j = 0; j < space.moveTargets.length; j++) {
             var target = space.moveTargets[j];
             var targetInner = _isInner(target);
@@ -341,6 +344,7 @@ function _finalizeMap(map) {
                 space.inside = target;
             else
                 space.forward = target;
+        }
         }
 
         space.corner = null;

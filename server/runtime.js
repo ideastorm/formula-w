@@ -19,7 +19,44 @@
 var deepCopy = require('./deepCopy');
 
 module.exports.bind = function (socket, io, games) {
-	socket.on('gearSelect', function (selectedGear) {
+    var autoMoveTimeout = null;
+    
+    function _autoGearSelect() {
+        var game = games.lookup(socket);
+        if (!game.running)
+            return;
+		var playerIndex = games.getPlayerIndex(game, socket.userId);
+		if (playerIndex === game.activePlayer) {
+            var player = game.players[playerIndex];
+            var targetGear = Math.max(player.activeGear - 1,2);
+            _gearSelect(targetGear);
+        }
+    }
+    
+    function _autoMoveSelect() {
+        var game = games.lookup(socket);
+        if (!game.running)
+            return;
+		var playerIndex = games.getPlayerIndex(game, socket.userId);
+		if (playerIndex === game.activePlayer) {
+            var player = game.players[playerIndex];
+            var moves = player.moveOptions;
+            var best = 100;
+            var bestIndex = null;
+            for (var i = moves.length-1; i >= 0; i--) {
+                var move = moves[i];
+                if (move.totalDamage < best) {
+                    best = move.totalDamage;
+                    bestIndex = i;
+                }
+            }
+            if (typeof bestIndex === 'number')
+                _selectMove(bestIndex);
+        }
+    }
+    
+    function _gearSelect (selectedGear) {
+        clearTimeout(autoMoveTimeout);
 		var game = games.lookup(socket);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
 		if (playerIndex === game.activePlayer) {
@@ -28,12 +65,15 @@ module.exports.bind = function (socket, io, games) {
 			if (player.gearSelected)
 				setTimeout(function () {
 					_calculateMoveOptions(game, player);
+                    autoMoveTimeout = setTimeout(_autoMoveSelect,5000);
 				}, 100);
 			else
 				io.to(game.id).emit("updatePlayers", game.players);
 		}
-	});
-	socket.on('selectMove', function (selectedMove) {
+	}
+    
+    function _selectMove(selectedMove) {
+        clearTimeout(autoMoveTimeout);        
 		var game = games.lookup(socket);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
 		if (playerIndex === game.activePlayer) {
@@ -72,7 +112,7 @@ module.exports.bind = function (socket, io, games) {
 				_nextPlayer();
 			}, delay);
 		}
-
+        
 		function _nextPlayer() {
 			if (!game.playerOrder.length) {
 				console.log("Recycling player list");
@@ -94,12 +134,16 @@ module.exports.bind = function (socket, io, games) {
 					nextPlayer.gearSelected = false;
 					io.to(game.id).emit("updatePlayers", game.players);
 					io.to(game.id).emit("currentPlayer", game.activePlayer);
+                    autoMoveTimeout = setTimeout(_autoGearSelect,3000);
 				}
 			} else {
 				_gameOver(game, null);
 			}
 		}
-	});
+	}
+    
+	socket.on('gearSelect', _gearSelect);
+	socket.on('selectMove', _selectMove);
 
 	function _isMyPitStop(game, playerInfo, spaceIndex) {
 		var playerIndex;
@@ -300,6 +344,7 @@ module.exports.bind = function (socket, io, games) {
 
 				if (_isMyPitStop(game, player, spaceIndex)) {
 					nextEntry.pitStop = true;
+					nextEntry.allowOut = true;
 					nextEntry.slowStop = _percentChance(50);
 					nextEntry.totalDamage -= nextEntry.brakingDamage;
 					nextEntry.totalDamage -= nextEntry.tireDamage;
@@ -407,14 +452,14 @@ module.exports.bind = function (socket, io, games) {
 			if (!player.destroyed)
 				locations.push(player.lap * spaces + player.location);
 		}
-        console.log(locations);
+		console.log(locations);
 		var sortedLocations = deepCopy(locations);
-		sortedLocations.sort();        
-        console.log(sortedLocations);
+		sortedLocations.sort();
+		console.log(sortedLocations);
 		for (var i = sortedLocations.length - 1; i >= 0; i--) {
 			game.playerOrder.push(locations.indexOf(sortedLocations[i]));
 		}
-        console.log(game.playerOrder);
+		console.log(game.playerOrder);
 	}
 
 	function _gameOver(game, winner) {
@@ -436,10 +481,9 @@ module.exports.bind = function (socket, io, games) {
 		if (move.destroy) {
 			io.to(game.id).emit("chatMessage", {
 				from : "System",
-				message : player.name + " has destroyed their car."
+				message : player.name + " is out of the race!"
 			});
 			player.destroyed = true;
-            player.location = -1;
 			var remaining = _remainingPlayers(game);
 			if (remaining.count === 1) {
 				_gameOver(game, remaining[0]);
@@ -472,6 +516,18 @@ module.exports.bind = function (socket, io, games) {
 
 	function _percentChance(percentChance) {
 		return Math.random() * 100 <= percentChance;
+	}
+
+	function _checkDamage(game, player) {
+		if (!game.advanced) {
+			if (player.damage <= 0) {
+				io.to(game.id).emit("chatMessage", {
+					from : "System",
+					message : player.name + " is out of the race!"
+				});
+				player.destroyed = true;
+			}
+		}
 	}
 
 	function _adjacentDamage(game, player) {
@@ -511,6 +567,7 @@ module.exports.bind = function (socket, io, games) {
 					from : p.name,
 					message : "I take 1 body damage"
 				});
+				_checkDamage(game, p);
 			} else
 				io.to(game.id).emit("chatMessage", {
 					from : p.name,
