@@ -29,7 +29,7 @@ limitations under the License.
                  title="{{moveOption.damageMsg}}">
             <img ng-repeat="moveOption in opponentMoves"
                  class="fw-game-icon"
-                 ng-src="markers/black.png"
+                 ng-src="markers/{{otherDamageIndex(moveOption)}}.png"
                  style="{{buildIconStyle(moveOption)}}"
                  title="{{moveOption.damageMsg}}">
         </div>

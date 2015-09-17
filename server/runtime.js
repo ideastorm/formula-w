@@ -46,6 +46,11 @@ module.exports.bind = function (socket, io, games) {
 			var delay = move.path.length * 250;
 			console.log("delay before finishing processing: " + delay);
 			setTimeout(function () {
+				if (move.slowStop)
+					player.skipNext = true;
+				if (move.pitStop) {
+					player.activeGear = 3; //allows gear 4 or lower
+				}
 				_applyDamage(game, player, move);
 				player.location = move.space;
 				_adjacentDamage(game, player);
@@ -61,31 +66,65 @@ module.exports.bind = function (socket, io, games) {
 						player.cornerStops = 0;
 				}
 				player.moveOptions = [];
-				if (!game.playerOrder.length) {
-					console.log("Recycling player list");
-					_sortPlayers(game);
-				}
-				game.activePlayer = game.playerOrder.shift();
 				if (player.lap > game.laps) {
 					_gameOver(game, player);
 				}
-				console.log("active player: " + game.activePlayer);
-				if (typeof game.activePlayer === 'number') {
-					game.players[game.activePlayer].gearSelected = false;
-					io.to(game.id).emit("updatePlayers", game.players);
-					io.to(game.id).emit("currentPlayer", game.activePlayer);
-				} else {
-					_gameOver(game, null);
-				}
+				_nextPlayer();
 			}, delay);
 		}
+
+		function _nextPlayer() {
+			if (!game.playerOrder.length) {
+				console.log("Recycling player list");
+				_sortPlayers(game);
+			}
+			game.activePlayer = game.playerOrder.shift();
+
+			console.log("active player: " + game.activePlayer);
+			if (typeof game.activePlayer === 'number') {
+				var nextPlayer = game.players[game.activePlayer];
+				if (nextPlayer.skipNext) {
+					nextPlayer.skipNext = false;
+					io.to(game.id).emit("chatMessage", {
+						from : nextPlayer.name,
+						message : "I had a slow pit stop - skipping my turn"
+					});
+					setTimeout(_nextPlayer, 1000); //give some time for people to read the message
+				} else {
+					nextPlayer.gearSelected = false;
+					io.to(game.id).emit("updatePlayers", game.players);
+					io.to(game.id).emit("currentPlayer", game.activePlayer);
+				}
+			} else {
+				_gameOver(game, null);
+			}
+		}
 	});
+
+	function _isMyPitStop(game, playerInfo, spaceIndex) {
+		var playerIndex;
+		if (typeof playerInfo === 'number')
+			playerIndex = playerInfo;
+		else
+			playerIndex = game.players.indexOf(playerInfo);
+		return game.map.pitStops.indexOf(spaceIndex) === playerIndex;
+	}
 
 	function _validateAndUpdateGearSelection(game, player, selectedGear) {
 		console.log("desired gear: " + selectedGear);
 		console.log(typeof selectedGear);
 		if (typeof selectedGear !== 'number' || selectedGear < 1 || selectedGear > 6 || selectedGear > player.activeGear + 1)
 			return;
+		if (_isMyPitStop(game, player, player.location)) {
+			console.log("accepting gear selection based on presence in pit stop");
+			player.gearSelected = true;
+			player.activeGear = selectedGear;
+			io.to(game.id).emit("chatMessage", {
+				from : player.name,
+				message : "I'm leaving the pits in gear " + selectedGear
+			});
+			return;
+		}
 		var damage = (player.activeGear - 1) - selectedGear;
 		console.log("damage from selecting desired gear: " + damage);
 		var availableDamage = !game.advanced ? player.damage : player.damage.transmission;
@@ -94,18 +133,22 @@ module.exports.bind = function (socket, io, games) {
 			console.log("rejecting gear selection");
 			socket.emit("chatMessage", {
 				from : "System",
-				message : "Downshifting to " + selectedGear + " would destroy your car, and is not allowed."
+				message : "Down shifting to " + selectedGear + " would destroy your car, and is not allowed."
 			});
 			return;
 		}
 		console.log("accepting gear selection");
 		player.gearSelected = true;
 		player.activeGear = selectedGear;
+		io.to(game.id).emit("chatMessage", {
+			from : player.name,
+			message : "I'm using gear " + selectedGear
+		});
 		if (damage > 0) {
 			console.log("taking damage");
-			io.to(game.id).emit({
+			io.to(game.id).emit("chatMessage", {
 				from : player.name,
-				message : "I took " + damage + " damage for aggressive downshifting"
+				message : "I took " + damage + " damage for aggressive down shifting"
 			});
 			if (!game.advanced) {
 				player.damage -= damage;
@@ -254,15 +297,25 @@ module.exports.bind = function (socket, io, games) {
 				};
 
 				_processCornerDamage();
-                
-                if (_isMyPitStop(player, spaceIndex)) {
-                    nextEntry.brakingDamage = 0;
-                    nextEntry.tireDamage = 0;
-                    nextEntry.totalDamage = 0;
-                    nextEntry.destroy = false;
-                    nextEntry.damageMsg = "Pit Stop: Tire damage repaired!";                    
-                    processDownstream = false;
-                }
+
+				if (_isMyPitStop(game, player, spaceIndex)) {
+					nextEntry.pitStop = true;
+					nextEntry.slowStop = _percentChance(50);
+					nextEntry.totalDamage -= nextEntry.brakingDamage;
+					nextEntry.totalDamage -= nextEntry.tireDamage;
+					nextEntry.brakingDamage = 0;
+					nextEntry.tireDamage = 0;
+					if (!game.advanced) {
+						nextEntry.totalDamage = Math.ceil((player.damage - 20) / 2); //should give a negative number so we actually repair
+						nextEntry.damageMsg = "Pit Stop: Half of all damage repaired!";
+					} else {
+						nextEntry.tireDamage = player.damage.tires - 10;
+						nextEntry.totalDamage += nextEntry.tireDamage;
+						nextEntry.damageMsg = "Pit Stop: Tire damage repaired!";
+					}
+					nextEntry.destroy = false;
+					processDownstream = false;
+				}
 
 				if (locationsThisDistance.indexOf(spaceIndex) < 0) {
 					locationsThisDistance.push(spaceIndex);
@@ -306,19 +359,10 @@ module.exports.bind = function (socket, io, games) {
 						console.log("Advanced damage not implemented");
 				}
 			}
-            
-			function _isMyPitStop(playerInfo, spaceIndex) {
-                var playerIndex;
-                if (typeof playerInfo === 'number')
-                    playerIndex = playerInfo;
-                else
-                    playerIndex = game.players.indexOf(playerInfo);
-				return map.pitStops.indexOf(spaceIndex) === playerIndex;
-			}
 
 			function _isBlocked(spaceIndex) {
 				var blockingPlayerIndex = playerLocations.indexOf(spaceIndex);
-				return blockingPlayerIndex >= 0 && !_isMyPitStop(blockingPlayerIndex, spaceIndex);
+				return blockingPlayerIndex >= 0 && !_isMyPitStop(game, blockingPlayerIndex, spaceIndex);
 			}
 		}
 
@@ -363,11 +407,14 @@ module.exports.bind = function (socket, io, games) {
 			if (!player.destroyed)
 				locations.push(player.lap * spaces + player.location);
 		}
+        console.log(locations);
 		var sortedLocations = deepCopy(locations);
-		sortedLocations.sort();
+		sortedLocations.sort();        
+        console.log(sortedLocations);
 		for (var i = sortedLocations.length - 1; i >= 0; i--) {
 			game.playerOrder.push(locations.indexOf(sortedLocations[i]));
 		}
+        console.log(game.playerOrder);
 	}
 
 	function _gameOver(game, winner) {
@@ -392,6 +439,7 @@ module.exports.bind = function (socket, io, games) {
 				message : player.name + " has destroyed their car."
 			});
 			player.destroyed = true;
+            player.location = -1;
 			var remaining = _remainingPlayers(game);
 			if (remaining.count === 1) {
 				_gameOver(game, remaining[0]);
@@ -407,6 +455,11 @@ module.exports.bind = function (socket, io, games) {
 					from : player.name,
 					message : "I took " + move.totalDamage + " damage"
 				});
+			else if (move.totalDamge < 0)
+				io.to(game.id).emit("chatMessage", {
+					from : player.name,
+					message : (0 - move.totalDamage) + " damage was repaired in the pits."
+				});
 		}
 
 		function advancedDamage() {
@@ -417,29 +470,28 @@ module.exports.bind = function (socket, io, games) {
 		}
 	}
 
-	function _shouldTakeDamage(percentChance) {
+	function _percentChance(percentChance) {
 		return Math.random() * 100 <= percentChance;
 	}
-    
 
 	function _adjacentDamage(game, player) {
-        function _isPitStop(spaceIndex) {
-            return game.pitStops.indexOf(spaceIndex) >= 0;
-        }
-    
-        if (_isPitStop(player.location))
-            return;
+		function _isPitStop(spaceIndex) {
+			return game.map.pitStops.indexOf(spaceIndex) >= 0;
+		}
+
+		if (_isPitStop(player.location))
+			return;
 		var space = game.map.spaces[player.location];
 		var adjacentSpaces = [];
 		var i;
-		for (i = 0; i < space.adjacent.length; i++) 
-            if (!_isPitStop(space.adjacent[i])
-                adjacentSpaces.push(space.adjacent[i]);
-        
+		for (i = 0; i < space.adjacent.length; i++)
+			if (!_isPitStop(space.adjacent[i]))
+				adjacentSpaces.push(space.adjacent[i]);
+
 		for (i = 0; i < space.moveTargets.length; i++)
-            if (!_isPitStop(space.moveTargets[i])
-                adjacentSpaces.push(space.moveTargets[i]);
-            
+			if (!_isPitStop(space.moveTargets[i]))
+				adjacentSpaces.push(space.moveTargets[i]);
+
 		var adjacentPlayers = [];
 		for (i = 0; i < game.players.length; i++) {
 			if (adjacentSpaces.indexOf(game.players[i].location) >= 0) {
@@ -449,7 +501,7 @@ module.exports.bind = function (socket, io, games) {
 		}
 		while (adjacentPlayers.length) {
 			var p = adjacentPlayers.shift();
-			if (_shouldTakeDamage(5)) {
+			if (_percentChance(5)) {
 				if (!game.advanced) {
 					p.damage--;
 				} else {
