@@ -18,28 +18,36 @@
 
 var deepCopy = require('./deepCopy');
 
+var autoMoveTimeout = null;
+
 module.exports.bind = function (socket, io, games) {
-    var autoMoveTimeout = null;
+    
+    function _setWarning(player, message, action, delay, warnDelay) {
+    
+    function _warnPlayer() {
+        io.to(io.users[player.userId]]).emit("chatMessage",{
+        from:"System",
+        message:message
+        });
+        autoMoveTimeout = setTimeout(action, delay);
+    }
+    autoMoveTimeout = setTimeout(_warnPlayer, warnDelay);
+    }
     
     function _autoGearSelect() {
         var game = games.lookup(socket);
         if (!game.running)
             return;
-		var playerIndex = games.getPlayerIndex(game, socket.userId);
-		if (playerIndex === game.activePlayer) {
-            var player = game.players[playerIndex];
-            var targetGear = Math.max(player.activeGear - 1,2);
-            _gearSelect(targetGear);
-        }
+            var player = game.players[game.activePlayer];
+            var targetGear = Math.min(player.activeGear + 1, Math.max(player.activeGear - 1,3));
+            _gearSelect(targetGear, game.activePlayer);
     }
     
     function _autoMoveSelect() {
         var game = games.lookup(socket);
         if (!game.running)
             return;
-		var playerIndex = games.getPlayerIndex(game, socket.userId);
-		if (playerIndex === game.activePlayer) {
-            var player = game.players[playerIndex];
+            var player = game.players[game.activePlayer];
             var moves = player.moveOptions;
             var best = 100;
             var bestIndex = null;
@@ -51,31 +59,38 @@ module.exports.bind = function (socket, io, games) {
                 }
             }
             if (typeof bestIndex === 'number')
-                _selectMove(bestIndex);
-        }
+                _selectMove(bestIndex, game.activePlayer);
     }
     
-    function _gearSelect (selectedGear) {
+    function _gearSelect (selectedGear, forcePlayer) {
         clearTimeout(autoMoveTimeout);
 		var game = games.lookup(socket);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
+                if (typeof forcePlayer === 'number')
+                    playerIndex = forcePlayer;
 		if (playerIndex === game.activePlayer) {
 			var player = game.players[playerIndex];
 			_validateAndUpdateGearSelection(game, player, +selectedGear);
 			if (player.gearSelected)
 				setTimeout(function () {
 					_calculateMoveOptions(game, player);
-                    autoMoveTimeout = setTimeout(_autoMoveSelect,5000);
+                                        _setWarning(player, 
+                                        "A move will be selected for you in 10 seconds", 
+                                        _autoMoveSelect, 
+                                        10000, 
+                                        30000);
 				}, 100);
 			else
 				io.to(game.id).emit("updatePlayers", game.players);
 		}
 	}
     
-    function _selectMove(selectedMove) {
+    function _selectMove(selectedMove, forcePlayer) {
         clearTimeout(autoMoveTimeout);        
 		var game = games.lookup(socket);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
+                if (typeof forcePlayer === 'number')
+                    playerIndex = forcePlayer;
 		if (playerIndex === game.activePlayer) {
 			var player = game.players[playerIndex];
 			var move = player.moveOptions[selectedMove];
@@ -134,7 +149,9 @@ module.exports.bind = function (socket, io, games) {
 					nextPlayer.gearSelected = false;
 					io.to(game.id).emit("updatePlayers", game.players);
 					io.to(game.id).emit("currentPlayer", game.activePlayer);
-                    autoMoveTimeout = setTimeout(_autoGearSelect,3000);
+                                        _setWarning(nextPlayer, 
+                                            "A gear will be automatically selected in 10 seconds",
+                                            _autoGearSelect, 10000, 10000);
 				}
 			} else {
 				_gameOver(game, null);
