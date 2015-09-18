@@ -21,76 +21,78 @@ var deepCopy = require('./deepCopy');
 var autoMoveTimeout = null;
 
 module.exports.bind = function (socket, io, games) {
-    
-    function _setWarning(player, message, action, delay, warnDelay) {
-    
-    function _warnPlayer() {
-        io.to(io.users[player.userId]]).emit("chatMessage",{
-        from:"System",
-        message:message
-        });
-        autoMoveTimeout = setTimeout(action, delay);
-    }
-    autoMoveTimeout = setTimeout(_warnPlayer, warnDelay);
-    }
-    
-    function _autoGearSelect() {
-        var game = games.lookup(socket);
-        if (!game.running)
-            return;
-            var player = game.players[game.activePlayer];
-            var targetGear = Math.min(player.activeGear + 1, Math.max(player.activeGear - 1,3));
-            _gearSelect(targetGear, game.activePlayer);
-    }
-    
-    function _autoMoveSelect() {
-        var game = games.lookup(socket);
-        if (!game.running)
-            return;
-            var player = game.players[game.activePlayer];
-            var moves = player.moveOptions;
-            var best = 100;
-            var bestIndex = null;
-            for (var i = moves.length-1; i >= 0; i--) {
-                var move = moves[i];
-                if (move.totalDamage < best) {
-                    best = move.totalDamage;
-                    bestIndex = i;
-                }
-            }
-            if (typeof bestIndex === 'number')
-                _selectMove(bestIndex, game.activePlayer);
-    }
-    
-    function _gearSelect (selectedGear, forcePlayer) {
-        clearTimeout(autoMoveTimeout);
+
+	function _setWarning(player, message, action, delay, warnDelay) {
+		clearTimeout(autoMoveTimeout);
+		function _warnPlayer() {
+			autoMoveTimeout = setTimeout(action, delay);
+			io.to(io.users[player.id]).emit("chatMessage", {
+				from : "System",
+				message : message
+			});
+		}
+		autoMoveTimeout = setTimeout(_warnPlayer, warnDelay);
+	}
+
+	function _autoGearSelect() {
+		var game = games.lookup(socket);
+		if (!game.running)
+			return;
+		var player = game.players[game.activePlayer];
+		var targetGear = Math.min(player.activeGear + 1, Math.max(player.activeGear - 1, 3));
+		_gearSelect(targetGear, game.activePlayer);
+	}
+
+	function _autoMoveSelect() {
+		var game = games.lookup(socket);
+		if (!game.running)
+			return;
+		var player = game.players[game.activePlayer];
+		var moves = player.moveOptions;
+		var best = 100;
+		var bestIndex = null;
+		for (var i = moves.length - 1; i >= 0; i--) {
+			var move = moves[i];
+			if (move.totalDamage < best) {
+				best = move.totalDamage;
+				bestIndex = i;
+			}
+		}
+		if (typeof bestIndex === 'number')
+			_selectMove(bestIndex, game.activePlayer);
+	}
+
+	function _gearSelect(selectedGear, forcePlayer) {
+		clearTimeout(autoMoveTimeout);
 		var game = games.lookup(socket);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
-                if (typeof forcePlayer === 'number')
-                    playerIndex = forcePlayer;
+		if (typeof forcePlayer === 'number')
+			playerIndex = forcePlayer;
 		if (playerIndex === game.activePlayer) {
 			var player = game.players[playerIndex];
-			_validateAndUpdateGearSelection(game, player, +selectedGear);
-			if (player.gearSelected)
-				setTimeout(function () {
-					_calculateMoveOptions(game, player);
-                                        _setWarning(player, 
-                                        "A move will be selected for you in 10 seconds", 
-                                        _autoMoveSelect, 
-                                        10000, 
-                                        30000);
-				}, 100);
-			else
-				io.to(game.id).emit("updatePlayers", game.players);
+			if (!player.gearSelected) {
+				_validateAndUpdateGearSelection(game, player, +selectedGear);
+				if (player.gearSelected)
+					setTimeout(function () {
+						_calculateMoveOptions(game, player);
+						_setWarning(player,
+							"A move will be selected for you in 10 seconds",
+							_autoMoveSelect,
+							10000,
+							30000);
+					}, 100);
+				else
+					io.to(game.id).emit("updatePlayers", game.players);
+			}
 		}
 	}
-    
-    function _selectMove(selectedMove, forcePlayer) {
-        clearTimeout(autoMoveTimeout);        
+
+	function _selectMove(selectedMove, forcePlayer) {
+		clearTimeout(autoMoveTimeout);
 		var game = games.lookup(socket);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
-                if (typeof forcePlayer === 'number')
-                    playerIndex = forcePlayer;
+		if (typeof forcePlayer === 'number')
+			playerIndex = forcePlayer;
 		if (playerIndex === game.activePlayer) {
 			var player = game.players[playerIndex];
 			var move = player.moveOptions[selectedMove];
@@ -123,42 +125,49 @@ module.exports.bind = function (socket, io, games) {
 				player.moveOptions = [];
 				if (player.lap > game.laps) {
 					_gameOver(game, player);
+                    return;
 				}
 				_nextPlayer();
 			}, delay);
 		}
-        
-		function _nextPlayer() {
-			if (!game.playerOrder.length) {
-				console.log("Recycling player list");
-				_sortPlayers(game);
-			}
-			game.activePlayer = game.playerOrder.shift();
+	}
 
-			console.log("active player: " + game.activePlayer);
-			if (typeof game.activePlayer === 'number') {
-				var nextPlayer = game.players[game.activePlayer];
-				if (nextPlayer.skipNext) {
-					nextPlayer.skipNext = false;
-					io.to(game.id).emit("chatMessage", {
-						from : nextPlayer.name,
-						message : "I had a slow pit stop - skipping my turn"
-					});
-					setTimeout(_nextPlayer, 1000); //give some time for people to read the message
-				} else {
-					nextPlayer.gearSelected = false;
-					io.to(game.id).emit("updatePlayers", game.players);
-					io.to(game.id).emit("currentPlayer", game.activePlayer);
-                                        _setWarning(nextPlayer, 
-                                            "A gear will be automatically selected in 10 seconds",
-                                            _autoGearSelect, 10000, 10000);
-				}
+	function _nextPlayer() {
+		var game = games.lookup(socket);
+		if (!game)
+			return;
+		if (!game.running)
+			return;
+
+		if (!game.playerOrder.length) {
+			console.log("Recycling player list");
+			_sortPlayers(game);
+		}
+		game.activePlayer = game.playerOrder.shift();
+
+		console.log("active player: " + game.activePlayer);
+		if (typeof game.activePlayer === 'number') {
+			var nextPlayer = game.players[game.activePlayer];
+			if (nextPlayer.skipNext) {
+				nextPlayer.skipNext = false;
+				io.to(game.id).emit("chatMessage", {
+					from : nextPlayer.name,
+					message : "I had a slow pit stop - skipping my turn"
+				});
+				setTimeout(_nextPlayer, 1000); //give some time for people to read the message
 			} else {
-				_gameOver(game, null);
+				nextPlayer.gearSelected = false;
+				io.to(game.id).emit("updatePlayers", game.players);
+				io.to(game.id).emit("currentPlayer", game.activePlayer);
+				_setWarning(nextPlayer,
+					"A gear will be automatically selected in 10 seconds",
+					_autoGearSelect, 10000, 10000);
 			}
+		} else {
+			_gameOver(game, null);
 		}
 	}
-    
+
 	socket.on('gearSelect', _gearSelect);
 	socket.on('selectMove', _selectMove);
 
@@ -252,6 +261,32 @@ module.exports.bind = function (socket, io, games) {
 		var corners = map.corners;
 		var playerLocations = _getPlayerLocations(game.players);
 		var movePoints = _movementPoints(player.activeGear);
+
+		if (typeof player.firstRoll === 'undefined') {
+			var rand = Math.ceil(20 * Math.random());
+			if (rand === 1) {
+				player.firstRoll = 'poor';
+				io.to(game.id).emit('chatMessage', {
+					from : player.name,
+					message : 'Poor start!  I lost my turn'
+				});
+				_nextPlayer();
+				return;
+			} else if (rand === 20) {
+				player.firstRoll = 'great';
+				io.to(game.id).emit('chatMessage', {
+					from : player.name,
+					message : 'Great start!'
+				});
+				movePoints = 4;
+			} else {
+				io.to(game.id).emit('chatMessage', {
+					from : player.name,
+					message : 'Normal start.'
+				});
+				player.firstRoll = 'normal';
+			}
+		}
 		var touchedSpaces = 0;
 		console.log(player.name + " rolled a " + movePoints + ", calculating move options");
 		io.to(game.id).emit("chatMessage", {

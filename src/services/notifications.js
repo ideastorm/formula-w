@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Phillip Hayward <phil@pjhayward.net>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,36 +18,40 @@
 'use strict';
 
 angular.module('FormulaW').factory("notifications", ['chat', function (chat) {
-        var lastNotification;
-		var service = {
-			notify: _notify,
-			requestNotification: _request
-		};
+			var enable = typeof Notification !== 'undefined';
+            if (enable)
+                enable = (Notification.requestPermission && Notification.close);
+			var lastNotification;
+			var service = {
+				notify : _notify,
+				requestNotification : _request
+			};
 
-		chat.listen(function (message) {
-			console.log("Got a chat message: " + message);
-			if (message.from === 'System')
-				_notify("Formula-W", message.message);
-		});
-
-		return service;
-
-		function _notify(title, message) {
-            if (lastNotification)
-                lastNotification.close();
-			lastNotification = new Notification(title,
-					{
-						icon: "markers/0.png",
-						body: message
-					});
-//			notify.onclick = buildOnclick("/#/log/" + job.id, "log" + job.id);
-
-		}
-
-		function _request() {
-			Notification.requestPermission(function (permission) {
-				console.log("Notification permission was " + permission);
+			chat.listen(function (message) {
+				if (message.from === 'System')
+					_notify("Formula-W", message.message);
 			});
-		}
-	}]);
 
+			return service;
+
+			function _notify(title, message) {
+				if (enable) {
+					if (lastNotification)
+						lastNotification.close();
+					lastNotification = new Notification(title, {
+							icon : "markers/0.png",
+							body : message
+						});
+					//			notify.onclick = buildOnclick("/#/log/" + job.id, "log" + job.id);
+				}
+			}
+
+			function _request() {
+				if (enable) {
+					Notification.requestPermission(function (permission) {
+						console.log("Notification permission was " + permission);
+					});
+				}
+			}
+		}
+	]);

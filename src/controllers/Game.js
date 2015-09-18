@@ -43,9 +43,12 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				var theta = space.theta;
 				if (item.destroy)
 					theta = 0;
-				return "left:" + left + "px;top:" + top + "px;" +
-				"transform:rotate(" + theta + "deg);" +
-				"-webkit-transform:rotate(" + theta + "deg)";
+				return {
+					left : left + 'px',
+					top : top + 'px',
+					transform : 'rotate(' + theta + 'deg)',
+					'-webkit-transform' : 'rotate(' + theta + 'deg)'
+				};
 			};
 
 			$scope.damageIndex = function (moveOption) {

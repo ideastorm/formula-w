@@ -15,22 +15,23 @@ limitations under the License.
 -->
 <div ng-controller="Game" class="fullsize">
     <div id="fw-game-view" class="fw-game-runtime">
-        <div style="background-image: url('maps/{{map.name}}.png'); width:{{map.width}}px; height:{{map.height}}px; position:relative">
+        <div style="background-image: url('maps/{{map.name}}.png'); position:relative" 
+                ng-style="{width:map.width+'px', height: map.height+'px'}">
             <img ng-repeat="player in players" 
                  class="fw-game-icon animate-move" 
                  ng-show="player.car" 
                  ng-src="cars/{{player.car}}"
-                 style="{{buildIconStyle(player)}}">
+                 ng-style="buildIconStyle(player)">
             <img ng-repeat="moveOption in moveOptions"
                  class="fw-game-icon"
                  ng-src="markers/{{damageIndex(moveOption)}}.png"
                  ng-click="selectMoveOption($index)"
-                 style="{{buildIconStyle(moveOption)}}"
+                 ng-style="buildIconStyle(moveOption)"
                  title="{{moveOption.damageMsg}}">
             <img ng-repeat="moveOption in opponentMoves"
                  class="fw-game-icon"
                  ng-src="markers/{{otherDamageIndex(moveOption)}}.png"
-                 style="{{buildIconStyle(moveOption)}}"
+                 ng-style="buildIconStyle(moveOption)"
                  title="{{moveOption.damageMsg}}">
         </div>
     </div>
