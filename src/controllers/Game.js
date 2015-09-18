@@ -20,9 +20,12 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			var gameView = document.getElementById('fw-game-view');
 			var game = $scope.game = Games.currentGame;
 			var messageQueue = [];
-			var moving = false;
 
 			notifications.requestNotification();
+
+			$scope.animationClass = function (player) {
+				return "animate-move-" + player.speed;
+			};
 
 			$scope.gear = 0;
 			$scope.buildIconStyle = function (item) {
@@ -124,8 +127,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 						message : "It's your turn"
 					});
 				}
-				if (!moving)
-					_scrollToActivePlayer();
+				_scrollToActivePlayer();
 			}
 
 			$scope.selectGear = function () {
@@ -154,17 +156,12 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			}
 
 			Messaging.register("updatePlayers", function (data) {
-				messageQueue.push(function updatePlayers() {
-					if (moving) {
-						messageQueue.push(updatePlayers);
-						_processMessageQueue();
-					} else {
-						console.log("updating player list");
-						_processPlayerUpdate(data);
-					}
+				console.log("updating player list");
+				$scope.$apply(function () {
+					_processPlayerUpdate(data);
 				});
-				_processMessageQueue();
 			});
+
 			Messaging.register("currentGame", function (data) {
 				console.log(data);
 				Games.currentGame = data;
@@ -178,47 +175,29 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					_processPlayerUpdate(data.players);
 				});
 			});
-			var _processingQueue = false;
-			var _queueRetry;
-			function _processMessageQueue() {
-				console.log("checking queue");
-				if (_processingQueue) {
-					clearTimeout(_queueRetry);
-					_queueRetry = setTimeout(_processMessageQueue, 200);
-					return;
-				}
-				_processingQueue = true;
-				var message = messageQueue.shift();
-				if (typeof message === 'function')
-					$scope.$apply(message);
-				_processingQueue = false;
-			}
 
 			Messaging.register("activePlayerMove", function (path) {
-				$scope.opponentMoves = [];
 				var playerIndex = game.activePlayer;
 				var player = game.players[playerIndex];
-				for (var i = 0; i < path.length; i++) {
-					messageQueue.push(buildMove(i));
-				}
-				_processMessageQueue();
+				var speed = path.length;
+				player.speed = path.length;
 
-				function buildMove(index) {
-					return function nextMove() {
-						if (moving) {
-							messageQueue.unshift(nextMove);
-							_processMessageQueue();
-						} else {
-							_nextSpace(path[index]);
+				$scope.$apply(function () {
+					$scope.opponentMoves = [];
+					$scope.moveOptions = null;
+					setTimeout(_nextSpace, 1);
+				});
+
+				function _nextSpace() {
+					$scope.$apply(function () {
+						if (path.length) {
+							var location = path.shift();
+							if (player.location > location)
+								player.lap++;
+							player.location = location;
+							setTimeout(_nextSpace, 4000 / speed);
 						}
-					};
-				}
-
-				function _nextSpace(location) {
-					if (player.location > location)
-						player.lap++;
-					player.location = location;
-					_processMessageQueue();
+					});
 				}
 			});
 

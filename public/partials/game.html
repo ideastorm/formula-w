@@ -18,6 +18,7 @@ limitations under the License.
         <div style="background-image: url('maps/{{map.name}}.png'); position:relative" 
                 ng-style="{width:map.width+'px', height: map.height+'px'}">
             <img ng-repeat="player in players" 
+                 ng-class="animationClass(player)"
                  class="fw-game-icon animate-move" 
                  ng-show="player.car" 
                  ng-src="cars/{{player.car}}"
