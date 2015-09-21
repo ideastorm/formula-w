@@ -25,6 +25,7 @@ limitations under the License.
 @borderHighlight: @borders + #222;
 @text: black;
 @dashWidth: 200px;
+@totalDelay: 2s;
 
 
 html, body, .fullsize {
@@ -209,99 +210,99 @@ button:hover {
 }
 
 .animate-move(@delay) {
-    -webkit-transition: @delay linear all;
+    -webkit-transition: @delay  linear all;
     -moz-transition: @delay linear all;
     -o-transition: @delay linear all;
     transition: @delay linear all;
 }
 
 .animate-move-1 {
-    .animate-move(4s);
+    .animate-move(@totalDelay);
 }
 .animate-move-2 {
-    .animate-move(2s);
+    .animate-move(@totalDelay /2);
 }
 .animate-move-3 {
-    .animate-move(1.333s);
+    .animate-move(@totalDelay /3);
 }
 .animate-move-4 {
-    .animate-move(1s);
+    .animate-move(@totalDelay/4);
 }
 .animate-move-5 {
-    .animate-move(0.8s);
+    .animate-move(@totalDelay /5);
 }
 .animate-move-6 {
-    .animate-move(0.667s);
+    .animate-move(@totalDelay /6);
 }
 .animate-move-7 {
-    .animate-move(0.571s);
+    .animate-move(@totalDelay /7);
 }
 .animate-move-8 {
-    .animate-move(0.5s);
+    .animate-move(@totalDelay /8);
 }
 .animate-move-9 {
-    .animate-move(0.444s);
+    .animate-move(@totalDelay /9);
 }
 .animate-move-10 {
-    .animate-move(0.4s);
+    .animate-move(@totalDelay /10);
 }
 .animate-move-11 {
-    .animate-move(0.364s);
+    .animate-move(@totalDelay /11);
 }
 .animate-move-12 {
-    .animate-move(0.333s);
+    .animate-move(@totalDelay /12);
 }
 .animate-move-13 {
-    .animate-move(0.308s);
-}
-.animate-move-14 {
-    .animate-move(0.286s);
-}
-.animate-move-15 {
-    .animate-move(0.267s);
-}
-.animate-move-16 {
-    .animate-move(0.25s);
-}
-.animate-move-17 {
-    .animate-move(0.235s);
-}
-.animate-move-18 {
-    .animate-move(0.222s);
-}
-.animate-move-19 {
-    .animate-move(0.211s);
-}
-.animate-move-20 {
-    .animate-move(0.2s);
-}
-.animate-move-21 {
-    .animate-move(0.19s);
-}
-.animate-move-22 {
-    .animate-move(0.182s);
-}
-.animate-move-23 {
-    .animate-move(0.174s);
-}
-.animate-move-24 {
-    .animate-move(0.167s);
-}
-.animate-move-25 {
-    .animate-move(0.16s);
-}
-.animate-move-26 {
     .animate-move(0.154s);
 }
-.animate-move-27 {
-    .animate-move(0.148s);
-}
-.animate-move-28 {
+.animate-move-14 {
     .animate-move(0.143s);
 }
+.animate-move-15 {
+    .animate-move(0.133s);
+}
+.animate-move-16 {
+    .animate-move(0.188s);
+}
+.animate-move-17 {
+    .animate-move(0.118s);
+}
+.animate-move-18 {
+    .animate-move(0.111s);
+}
+.animate-move-19 {
+    .animate-move(0.105s);
+}
+.animate-move-20 {
+    .animate-move(0.1s);
+}
+.animate-move-21 {
+    .animate-move(0.095s);
+}
+.animate-move-22 {
+    .animate-move(0.091s);
+}
+.animate-move-23 {
+    .animate-move(0.087s);
+}
+.animate-move-24 {
+    .animate-move(0.083s);
+}
+.animate-move-25 {
+    .animate-move(0.08s);
+}
+.animate-move-26 {
+    .animate-move(0.077s);
+}
+.animate-move-27 {
+    .animate-move(0.074s);
+}
+.animate-move-28 {
+    .animate-move(0.071s);
+}
 .animate-move-29 {
-    .animate-move(0.138s);
+    .animate-move(0.069s);
 }
 .animate-move-30 {
-    .animate-move(0.133s);
+    .animate-move(0.067s);
 }

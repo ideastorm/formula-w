@@ -100,7 +100,7 @@ module.exports.bind = function (socket, io, games) {
 				player.lap++;
 			}
 			io.to(game.id).emit("activePlayerMove", move.path);
-			var delay = 4250;
+			var delay = 2250;
 			console.log("delay before finishing processing: " + delay);
 			setTimeout(function () {
 				if (move.slowStop)

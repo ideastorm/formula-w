@@ -195,7 +195,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 							if (player.location > location)
 								player.lap++;
 							player.location = location;
-							setTimeout(_nextSpace, 4000 / speed);
+							setTimeout(_nextSpace, 2000 / speed);
 						}
 					});
 				}
