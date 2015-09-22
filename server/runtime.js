@@ -123,10 +123,16 @@ module.exports.bind = function (socket, io, games) {
 						player.cornerStops = 0;
 				}
 				player.moveOptions = [];
+                                
 				if (player.lap > game.laps) {
-					_gameOver(game, player);
-                    return;
+                                    game.winners.push(playerIndex);
+                                    player.destroyed = true;
 				}
+                                var gameOverThreshold = game.winners.length ? 1:0;
+                                if (_remainingPlayers(game).length <= gameOverThreshold) {
+                                    _gameOver(game);
+                                    return;
+                                }
 				_nextPlayer();
 			}, delay);
 		}
@@ -164,7 +170,7 @@ module.exports.bind = function (socket, io, games) {
 					_autoGearSelect, 10000, 10000);
 			}
 		} else {
-			_gameOver(game, null);
+			_gameOver(game);
 		}
 	}
 
@@ -485,7 +491,7 @@ module.exports.bind = function (socket, io, games) {
 			}
 		}
 	}
-
+        
 	function _remainingPlayers(game) {
 		var players = [];
 		for (var i = 0; i < game.players.length; i++) {
@@ -505,7 +511,7 @@ module.exports.bind = function (socket, io, games) {
 				locations.push(player.lap * spaces + player.location);
 		}
 		console.log(locations);
-		var sortedLocations = deepCopy(locations);
+		var sortedLocations = deepCopy(locations); //need the original to find the players again
 		sortedLocations.sort();
 		console.log(sortedLocations);
 		for (var i = sortedLocations.length - 1; i >= 0; i--) {
@@ -514,9 +520,12 @@ module.exports.bind = function (socket, io, games) {
 		console.log(game.playerOrder);
 	}
 
-	function _gameOver(game, winner) {
+	function _gameOver(game) {
+                var winnerNames = [];
+                for (var i = 0; i < game.winners.length; i++) 
+                    winnerNames.push(game.players[game.winners[i]]);
 		var message = {
-			winner : winner ? winner.name : null
+			rankings: winnerNames
 		};
 		io.to(game.id).emit("gameOver", message);
 		game.running = false;
@@ -531,15 +540,7 @@ module.exports.bind = function (socket, io, games) {
 		else
 			advancedDamage();
 		if (move.destroy) {
-			io.to(game.id).emit("chatMessage", {
-				from : "System",
-				message : player.name + " is out of the race!"
-			});
-			player.destroyed = true;
-			var remaining = _remainingPlayers(game);
-			if (remaining.count === 1) {
-				_gameOver(game, remaining[0]);
-			}
+                    _destroyPlayer(game, player);
 		}
 
 		function simpleDamage() {
@@ -573,11 +574,7 @@ module.exports.bind = function (socket, io, games) {
 	function _checkDamage(game, player) {
 		if (!game.advanced) {
 			if (player.damage <= 0) {
-				io.to(game.id).emit("chatMessage", {
-					from : "System",
-					message : player.name + " is out of the race!"
-				});
-				player.destroyed = true;
+                                destroyPlayer(game, player);
 			}
 		}
 	}
@@ -627,5 +624,32 @@ module.exports.bind = function (socket, io, games) {
 				});
 		}
 	}
+        
+        function _ordinality(ordinal) {
+            
+            var suffix = "th";
+            if (ordinal <10 || ordinal > 20) //teens are all "th"
+            switch (ordinal%10) {
+                case 1: suffix= "st"; break;
+                case 2: suffix= "nd"; break;
+                case 3: suffix= "rd"; break;
+            }
+            return ordinal+suffix;
+        }
+        
+        function _destroyPlayer(game, player) {
+            var message = player.name + " is out of the race!";
+            var playerIndex = game.players.indexOf(player);
+            var place = game.winners.indexOf(playerIndex);
+            if (place >= 0) {
+                game.winners.splice(place,1);
+                message = player.name+" is out of the race, and forfeits "+_ordinality(place+1)+" place!";
+            }
+            io.to(game.id).emit("chatMessage", {
+                    from : "System",
+                    message : message
+            });
+            player.destroyed = true;
+        }
 
 };

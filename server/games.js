@@ -118,6 +118,7 @@ function _bind(socket, io, players) {
             if (game) {
                 game.running = true;
                 game.map = deepCopy(_maps[game.mapName]);
+                game.winners = [];
                 _finalizeMap(game.map);
                 _randomizePlayers(game);
                 _assignStartSpaces(game);

@@ -99,10 +99,13 @@ limitations under the License.
             </form>
 			<a href="credits.html" target="creditsWindow">Credits</a>
         </div>
-        <div ng-if="winner && gameOver" class="end-game-modal">
-            <h3>{{winner}} wins!</h3>
+        <div ng-if="rankings && gameOver" class="end-game-modal">
+            <h3>Rankings</h3>
+            <h4 ng-repeat="name in rankings">
+                {{$index+1}}: {{name}}
+            </h4>
         </div>
-        <div ng-if="gameOver && !winner" class="end-game-modal">
+        <div ng-if="gameOver && !rankings" class="end-game-modal">
             <h3>You all lose!</h3>
         </div>
     </div>

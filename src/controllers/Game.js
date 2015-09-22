@@ -222,8 +222,8 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 
 			Messaging.register("gameOver", function (data) {
 				$scope.$apply(function () {
-					if (data.winner) {
-						$scope.winner = data.winner;
+					if (data.rankings) {
+						$scope.rankings = data.rankings;
 					}
 					$scope.gameOver = true;
 				});
