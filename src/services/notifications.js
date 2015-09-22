@@ -17,20 +17,16 @@
 /* global Notification, angular */
 'use strict';
 
-angular.module('FormulaW').factory("notifications", ['chat', function (chat) {
+angular.module('FormulaW').factory("notifications", [ function () {
 			var enable = typeof Notification !== 'undefined';
             if (enable)
                 enable = (Notification.requestPermission && Notification.close);
 			var lastNotification;
+            
 			var service = {
 				notify : _notify,
 				requestNotification : _request
 			};
-
-			chat.listen(function (message) {
-				if (message.from === 'System')
-					_notify("Formula-W", message.message);
-			});
 
 			return service;
 

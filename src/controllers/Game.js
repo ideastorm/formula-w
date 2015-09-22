@@ -16,12 +16,17 @@
 
 'use strict';
 
-angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$location', 'Games', 'Messaging', 'player', 'chat', 'notifications', function ($scope, $routeParams, $location, Games, Messaging, player, chat, notifications) {
+angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$location', 'Games', 'Messaging', 'player', 'notifications', function ($scope, $routeParams, $location, Games, Messaging, player, notifications) {
 			var gameView = document.getElementById('fw-game-view');
 			var game = $scope.game = Games.currentGame;
+			var showGameState = false;
 			var messageQueue = [];
 
 			notifications.requestNotification();
+
+			$scope.activePlayers = function (value, index, array) {
+				return value.location >= 0;
+			};
 
 			$scope.animationClass = function (player) {
 				return "animate-move-" + player.speed;
@@ -31,9 +36,6 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			$scope.buildIconStyle = function (item) {
 				var space;
 				if (typeof item.location === 'number') {
-					if (item.location === -1) {
-						return "display:none";
-					}
 					space = game.map.spaces[item.location];
 				} else if (typeof item.space === 'number') {
 					space = game.map.spaces[item.space];
@@ -46,6 +48,8 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				var theta = space.theta;
 				if (item.destroy)
 					theta = 0;
+				if (item.spinout)
+					theta = theta - 180;
 				return {
 					left : left + 'px',
 					top : top + 'px',
@@ -65,6 +69,20 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				return damage;
 			};
 
+			$scope.damageMessage = function (moveOption) {
+				var prefix = moveOption.totalDamage + " damage; ";
+				if (moveOption.destroy)
+					prefix = "Destruction; ";
+				if (moveOption.totalDamage == 0)
+					prefix = "No Damage; ";
+
+				if (moveOption.pathDanger) {
+					prefix += moveOption.pathDanger + " dangerous spaces; ";
+				}
+
+				return prefix + moveOption.damageMsg;
+			};
+
 			$scope.otherDamageIndex = function (moveOption) {
 				return moveOption.destroy ? "death" : "black";
 			};
@@ -80,34 +98,40 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				$scope.moveOptions = null;
 			};
 			$scope.recentMessages = [];
+			$scope.systemMessages = [];
 			$scope.sendChat = function () {
 
 				var message = $scope.chatMessage.trim();
 				if (message) {
-					chat.send(message);
+					Messaging.send("chatMessage", message);
 					$scope.chatMessage = '';
 				}
 				return false;
 			};
-			function _processMessage(message) {
-				var chatBox = document.getElementById("chat-box");
-				$scope.recentMessages.push(message);
-				if ($scope.recentMessages.length > 30)
-					$scope.recentMessages.shift();
+
+			function _processMessage(message, collection, container) {
+				var chatBox = document.getElementById(container);
+				collection.push(message);
+				if (collection.length > 30)
+					collection.shift();
 				setTimeout(function () {
 					chatBox.scrollTop = chatBox.scrollHeight;
 				}, 1);
 			}
 
-			var chatListener = function (message) {
+			Messaging.register("chatMessage", function (message) {
 				$scope.$apply(function () {
-					_processMessage(message);
+					_processMessage(message, $scope.recentMessages, "playerChat");
 				});
-			};
+			});
 
-			chat.listen(chatListener);
-			$scope.$on('$destroy', function () {
-				chat.stopListening(chatListener);
+			Messaging.register("sysMessage", function (message) {
+				$scope.$apply(function () {
+					_processMessage({
+						id : Date.now(),
+						text : message
+					}, $scope.systemMessages, "systemChat");
+				});
 			});
 
 			Messaging.register("currentPlayer", function (index) {
@@ -117,15 +141,19 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				});
 			});
 
+			Messaging.register("dangerSpaces", function (spaceList) {
+				$scope.$apply(function () {
+					$scope.game.dangerSpaces = spaceList;
+				});
+			});
+
 			function _setActivePlayer(playerIndex) {
 				game.activePlayer = playerIndex;
+				game.players[playerIndex].spinout = false;
 				$scope.myTurn = (game.players[playerIndex].id === player.userId);
 				$scope.gearSelected = false;
 				if ($scope.myTurn) {
-					chat.localMessage({
-						from : 'System',
-						message : "It's your turn"
-					});
+					notifications.notify("Formula W", "It's your turn");
 				}
 				_scrollToActivePlayer();
 			}
@@ -180,7 +208,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				var playerIndex = game.activePlayer;
 				var player = game.players[playerIndex];
 				var speed = path.length;
-				player.speed = path.length;
+				player.speed = speed;
 
 				$scope.$apply(function () {
 					$scope.opponentMoves = [];
@@ -194,6 +222,8 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 							var location = path.shift();
 							if (player.location > location)
 								player.lap++;
+							if (player.location === location)
+								player.spinout = true;
 							player.location = location;
 							setTimeout(_nextSpace, 2000 / speed);
 						}

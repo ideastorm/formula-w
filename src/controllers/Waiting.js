@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Phillip Hayward <phil@pjhayward.net>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,138 +36,191 @@ angular.module('FormulaW').filter('prettifyFileName', function () {
 	return prettifyFileName;
 });
 angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$routeParams', 'Messaging', 'Games', 'player', function ($scope, $location, $routeParams, Messaging, Games, player) {
-		$scope.player = player;
-		$scope.starting = false;
-		$scope.mapNames = [];
-		for (var mapName in require('../../shared/maps'))
-			$scope.mapNames.push(mapName);
-		$scope.mapNames.sort();
-		$scope.mapName = 'Monaco';
-		$scope.cars = require('../../shared/cars');
-
-		$scope.kick = function (otherPlayer) {
-			if ($scope.hosting() && !$scope.isRunning())
-				Messaging.send("kick", {gameId: Games.currentGame.id, userId: otherPlayer.id});
-		};
-
-		$scope.ban = function (otherPlayer) {
-			if ($scope.hosting() && !$scope.isRunning())
-				Messaging.send("ban", {gameId: Games.currentGame.id, userId: otherPlayer.id});
-		};
-
-		$scope.isMe = function (user) {
-			return user.id === player.userId;
-		};
-                
-                $scope.isRunning = function () {
-                    return $scope.game.running;
-                }
-
-		$scope.hosting = function () {
-			return $scope.players
-							&& $scope.players[0]
-							&& $scope.players[0].id === player.userId;
-		};
-
-		$scope.inGame = function () {
-			if ($scope.players) {
-				for (var i = 0; i < $scope.players.length; i++) {
-					if ($scope.players[i].id === player.userId)
-						return true;
+			$scope.player = player;
+			$scope.lapCount = 2;
+			$scope.lapOptions = [{
+					count : 1
+				}, {
+					count : 2
+				}, {
+					count : 3
+				}, {
+					count : 4
+				}, {
+					count : 5
+				}, {
+					count : 6
+				}, {
+					count : 7
+				}, {
+					count : 8
+				}, {
+					count : 9
+				}, {
+					count : 10
 				}
-			}
-			return false;
-		};
+			];
+			$scope.starting = false;
+			$scope.mapNames = [];
+			for (var mapName in require('../../shared/maps'))
+				$scope.mapNames.push(mapName);
+			$scope.mapNames.sort();
+			$scope.mapName = 'Monaco';
+			$scope.cars = require('../../shared/cars');
 
-		$scope.playersReady = function () {
-			if ($scope.players && $scope.players.length) {
-				for (var i = 0; i < $scope.players.length; i++) {
-					if ($scope.players[i].ready === "Not Ready")
-						return false;
+			$scope.damageMode = function () {
+				return $scope.advancedDamage ? "Advanced" : "Basic";
+			};
+
+			$scope.updateMap = function () {};
+			$scope.updateLaps = function () {
+				if ($scope.hosting() && !$scope.isRunning())
+					Messaging.send("updateGame", {
+						gameId : Games.currentGame.id,
+						settings : {
+							laps : $scope.lapCount
+						}
+					});
+			};
+			$scope.updateDamage = function () {
+				if ($scope.hosting() && !$scope.isRunning())
+					Messaging.send("updateGame", {
+						gameId : Games.currentGame.id,
+						settings : {
+							advanced : ($scope.advancedDamage ? true : false)
+						}
+					});
+			};
+
+			$scope.kick = function (otherPlayer) {
+				if ($scope.hosting() && !$scope.isRunning())
+					Messaging.send("kick", {
+						gameId : Games.currentGame.id,
+						userId : otherPlayer.id
+					});
+			};
+
+			$scope.ban = function (otherPlayer) {
+				if ($scope.hosting() && !$scope.isRunning())
+					Messaging.send("ban", {
+						gameId : Games.currentGame.id,
+						userId : otherPlayer.id
+					});
+			};
+
+			$scope.isMe = function (user) {
+				return user.id === player.userId;
+			};
+
+			$scope.isRunning = function () {
+				return $scope.game.running;
+			}
+
+			$scope.hosting = function () {
+				return $scope.players
+				 && $scope.players[0]
+				 && $scope.players[0].id === player.userId;
+			};
+
+			$scope.inGame = function () {
+				if ($scope.players) {
+					for (var i = 0; i < $scope.players.length; i++) {
+						if ($scope.players[i].id === player.userId)
+							return true;
+					}
 				}
-				return true;
-			}
-			return false;
-		};
+				return false;
+			};
 
-		$scope.start = function () {
-			if ($scope.hosting() && $scope.playersReady()) {
-				Messaging.send("startGame");
-			}
-		};
+			$scope.playersReady = function () {
+				if ($scope.players && $scope.players.length) {
+					for (var i = 0; i < $scope.players.length; i++) {
+						if ($scope.players[i].ready === "Not Ready")
+							return false;
+					}
+					return true;
+				}
+				return false;
+			};
 
-		$scope.updateCars = function (car) {
-			Messaging.send("selectCar", car);
-		};
+			$scope.start = function () {
+				if ($scope.hosting() && $scope.playersReady()) {
+					Messaging.send("startGame");
+				}
+			};
 
-		$scope.$on("$locationChangeStart", function (event) {
-                        if ($scope.isRunning())
-                            return;
-			var message;
-			if ($scope.starting)
-				return;
-			if ($scope.hosting()) {
-				if ($scope.players.length > 1)
-					message = 'Leaving will transfer ownership of the game to another player.  Continue?';
-				else
-					message = 'Leaving will shut down this game.  Continue?';
-			} else if ($scope.inGame()) {
-				message = 'Leaving now will remove you from this game.  Continue?';
-			} // else you are a spectator
-			if (message && !confirm(message)) {
-				event.preventDefault();
-				return;
-			}
-			Messaging.send('leave', Games.currentGame.id);
-		});
+			$scope.updateCars = function (car) {
+				Messaging.send("selectCar", car);
+			};
 
-		Messaging.register("startGame", function () {
-			$scope.$apply(function () {
-				$scope.starting = true;
-				$location.url('/play/' + Games.currentGame.id);
+			$scope.$on("$locationChangeStart", function (event) {
+				if ($scope.isRunning())
+					return;
+				var message;
+				if ($scope.starting)
+					return;
+				if ($scope.hosting()) {
+					if ($scope.players.length > 1)
+						message = 'Leaving will transfer ownership of the game to another player.  Continue?';
+					else
+						message = 'Leaving will shut down this game.  Continue?';
+				} else if ($scope.inGame()) {
+					message = 'Leaving now will remove you from this game.  Continue?';
+				} // else you are a spectator
+				if (message && !confirm(message)) {
+					event.preventDefault();
+					return;
+				}
+				Messaging.send('leave', Games.currentGame.id);
 			});
-		});
 
-		Messaging.register("currentGame", function (data) {
-			Games.currentGame = data;
-			if (data.players.length === 0)
-				$location.url('/');
-
-			$scope.$apply(function () {
-                                $scope.game = Games.currentGame;
-				$scope.players = data.players;
-				$scope.map = data.map;
-
-				for (var i = 0; i < $scope.players.length; i++)
-					_removeCar($scope.players[i].car);
+			Messaging.register("startGame", function () {
+				$scope.$apply(function () {
+					$scope.starting = true;
+					$location.url('/play/' + Games.currentGame.id);
+				});
 			});
-		});
 
-		function _removeCar(car)
-		{
-			var index = $scope.cars.indexOf(car);
-			if (index >= 0)
-				$scope.cars.splice(index, 1);
+			Messaging.register("currentGame", function (data) {
+				Games.currentGame = data;
+				if (data.players.length === 0)
+					$location.url('/');
+
+				$scope.$apply(function () {
+					$scope.game = Games.currentGame;
+					$scope.players = data.players;
+					$scope.map = data.map;
+
+					for (var i = 0; i < $scope.players.length; i++)
+						_removeCar($scope.players[i].car);
+				});
+			});
+
+			function _removeCar(car) {
+				var index = $scope.cars.indexOf(car);
+				if (index >= 0)
+					$scope.cars.splice(index, 1);
+			}
+
+			if ($location.url() === '/host')
+				Messaging.send("newGame");
+			else {
+				Messaging.send("join", $routeParams.game);
+			}
+
+			Messaging.register("updateCars", function (data) {
+				$scope.$apply(function () {
+					if (data.added) {
+						var index = $scope.cars.indexOf(data.added);
+						if (index < 0)
+							$scope.cars.push(data.added);
+					}
+					if (data.removed) {
+						_removeCar(data.removed);
+					}
+					$scope.cars.sort();
+				});
+			});
+
 		}
-
-		if ($location.url() === '/host')
-			Messaging.send("newGame");
-		else {
-			Messaging.send("join", $routeParams.game);
-		}
-
-		Messaging.register("updateCars", function (data) {
-			$scope.$apply(function () {
-				if (data.added) {
-					var index = $scope.cars.indexOf(data.added);
-					if (index < 0)
-						$scope.cars.push(data.added);
-				}
-				if (data.removed) {
-					_removeCar(data.removed);
-				}
-				$scope.cars.sort();
-			});
-		});
-
-	}]);
+	]);

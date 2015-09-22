@@ -26,10 +26,7 @@ module.exports.bind = function (socket, io, games) {
 		clearTimeout(autoMoveTimeout);
 		function _warnPlayer() {
 			autoMoveTimeout = setTimeout(action, delay);
-			io.to(io.users[player.id]).emit("chatMessage", {
-				from : "System",
-				message : message
-			});
+			io.to(io.users[player.id]).emit("sysMessage", message);
 		}
 		autoMoveTimeout = setTimeout(_warnPlayer, warnDelay);
 	}
@@ -99,6 +96,9 @@ module.exports.bind = function (socket, io, games) {
 			if (move.space < player.location) {
 				player.lap++;
 			}
+			if (move.spinout) {
+				move.path.push(move.path[move.path.length - 1]); //duplicate the last entry
+			}
 			io.to(game.id).emit("activePlayerMove", move.path);
 			var delay = 2250;
 			console.log("delay before finishing processing: " + delay);
@@ -108,7 +108,11 @@ module.exports.bind = function (socket, io, games) {
 				if (move.pitStop) {
 					player.activeGear = 3; //allows gear 4 or lower
 				}
-				_applyDamage(game, player, move);
+				if (move.spinout) {
+                    _sysMessage(game, player.name+" spun out!");
+					player.activeGear = 0;
+				}
+				_applyMoveDamage(game, player, move);
 				player.location = move.space;
 				_adjacentDamage(game, player);
 				player.allowIn = move.allowIn;
@@ -123,16 +127,16 @@ module.exports.bind = function (socket, io, games) {
 						player.cornerStops = 0;
 				}
 				player.moveOptions = [];
-                                
+
 				if (player.lap > game.laps) {
-                                    game.winners.push(playerIndex);
-                                    player.destroyed = true;
+					game.winners.push(playerIndex);
+					player.destroyed = true;
 				}
-                                var gameOverThreshold = game.winners.length ? 1:0;
-                                if (_remainingPlayers(game).length <= gameOverThreshold) {
-                                    _gameOver(game);
-                                    return;
-                                }
+				var gameOverThreshold = game.winners.length ? 1 : 0;
+				if (_remainingPlayers(game).length <= gameOverThreshold) {
+					_gameOver(game);
+					return;
+				}
 				_nextPlayer();
 			}, delay);
 		}
@@ -156,10 +160,7 @@ module.exports.bind = function (socket, io, games) {
 			var nextPlayer = game.players[game.activePlayer];
 			if (nextPlayer.skipNext) {
 				nextPlayer.skipNext = false;
-				io.to(game.id).emit("chatMessage", {
-					from : nextPlayer.name,
-					message : "I had a slow pit stop - skipping my turn"
-				});
+				_sysMessage(game, nextPlayer.name + " had a slow pit stop - skipping this turn");
 				setTimeout(_nextPlayer, 1000); //give some time for people to read the message
 			} else {
 				nextPlayer.gearSelected = false;
@@ -187,50 +188,26 @@ module.exports.bind = function (socket, io, games) {
 	}
 
 	function _validateAndUpdateGearSelection(game, player, selectedGear) {
-		console.log("desired gear: " + selectedGear);
-		console.log(typeof selectedGear);
 		if (typeof selectedGear !== 'number' || selectedGear < 1 || selectedGear > 6 || selectedGear > player.activeGear + 1)
 			return;
 		if (_isMyPitStop(game, player, player.location)) {
-			console.log("accepting gear selection based on presence in pit stop");
 			player.gearSelected = true;
 			player.activeGear = selectedGear;
-			io.to(game.id).emit("chatMessage", {
-				from : player.name,
-				message : "I'm leaving the pits in gear " + selectedGear
-			});
+			_sysMessage(game, player.name + " is leaving the pits in gear " + selectedGear);
 			return;
 		}
 		var damage = (player.activeGear - 1) - selectedGear;
-		console.log("damage from selecting desired gear: " + damage);
-		var availableDamage = !game.advanced ? player.damage : player.damage.transmission;
-		console.log("available damage: " + availableDamage);
-		if (availableDamage < damage || damage > 3) {
-			console.log("rejecting gear selection");
-			socket.emit("chatMessage", {
-				from : "System",
-				message : "Down shifting to " + selectedGear + " would destroy your car, and is not allowed."
-			});
-			return;
-		}
-		console.log("accepting gear selection");
 		player.gearSelected = true;
 		player.activeGear = selectedGear;
-		io.to(game.id).emit("chatMessage", {
-			from : player.name,
-			message : "I'm using gear " + selectedGear
-		});
+		_sysMessage(game, player.name + " is using gear " + selectedGear);
 		if (damage > 0) {
-			console.log("taking damage");
-			io.to(game.id).emit("chatMessage", {
-				from : player.name,
-				message : "I took " + damage + " damage for aggressive down shifting"
-			});
+			_sysMessage(game, player.name + " takes " + damage + " damage for aggressive down shifting");
 			if (!game.advanced) {
 				player.damage -= damage;
 			} else {
 				player.damage.transmission -= damage;
 			}
+			_checkDamage(game, player);
 		}
 	}
 
@@ -272,33 +249,26 @@ module.exports.bind = function (socket, io, games) {
 			var rand = Math.ceil(20 * Math.random());
 			if (rand === 1) {
 				player.firstRoll = 'poor';
-				io.to(game.id).emit('chatMessage', {
-					from : player.name,
-					message : 'Poor start!  I lost my turn'
-				});
+				_sysMessage(game, player.name + " had a poor start and will restart next turn.");
 				_nextPlayer();
 				return;
 			} else if (rand === 20) {
 				player.firstRoll = 'great';
-				io.to(game.id).emit('chatMessage', {
-					from : player.name,
-					message : 'Great start!'
-				});
+				_sysMessage(game, player.name + " had a great start, and can move four spaces.");
 				movePoints = 4;
 			} else {
-				io.to(game.id).emit('chatMessage', {
-					from : player.name,
-					message : 'Normal start.'
-				});
+				_sysMessage(game, player.name + " had a normal start.");
 				player.firstRoll = 'normal';
 			}
 		}
 		var touchedSpaces = 0;
 		console.log(player.name + " rolled a " + movePoints + ", calculating move options");
-		io.to(game.id).emit("chatMessage", {
-			from : player.name,
-			message : "I rolled a " + movePoints
-		});
+		var extraMessage = "";
+		if ((player.activeGear === 5 && movePoints === 20) || (player.activeGear === 6 && movePoints === 30)) {
+			_applyEngineDamage(game, player);
+			extraMessage = " and took 1 engine damage.  This space is now dangerous!";
+		}
+		_sysMessage(game, player.name + " rolled " + movePoints + extraMessage);
 		var availableSpaces = [];
 		var workQueue = [{
 				space : player.location,
@@ -310,7 +280,8 @@ module.exports.bind = function (socket, io, games) {
 				corner : player.currentCorner,
 				cornerStops : player.cornerStops,
 				cornerDamage : 0,
-				addCornerDamage : 0
+				addCornerDamage : 0,
+				pathDanger : 0
 			}
 		];
 		var lastDistance = 0;
@@ -384,6 +355,7 @@ module.exports.bind = function (socket, io, games) {
 				newPath.push(spaceIndex);
 				var nextEntry = {
 					space : spaceIndex,
+					dangerous : (game.dangerSpaces.indexOf(spaceIndex) >= 0),
 					brakingDamage : brakeDamage,
 					tireDamage : tireDamage,
 					totalDamage : brakeDamage + tireDamage,
@@ -397,6 +369,7 @@ module.exports.bind = function (socket, io, games) {
 					cornerStops : entry.cornerStops,
 					addCornerDamage : entry.addCornerDamage
 				};
+				nextEntry.pathDanger = (nextEntry.dangerous ? 1 : 0) + entry.pathDanger;
 
 				_processCornerDamage();
 
@@ -455,11 +428,29 @@ module.exports.bind = function (socket, io, games) {
 							nextEntry.damageMsg += " and " + cornerDamageMsg;
 					}
 					if (!game.advanced) {
-						if (nextEntry.totalDamage >= player.damage) {
+						if (nextEntry.totalDamage > player.damage) {
 							nextEntry.destroy = true;
+						} else if (nextEntry.totalDamage === player.damage) {
+							_spinoutCheck(nextEntry);
 						}
-					} else
-						console.log("Advanced damage not implemented");
+					} else {
+						if (nextEntry.tireDamage + nextEntry.cornerDamage > player.damage.tires) {
+							nextEntry.destroy = true;
+						} else if (nextEntry.tireDamage + nextEntry.cornerDamage === player.damage.tires) {
+							_spinoutCheck(nextEntry);
+						}
+						nextEntry.destroy |= (nextEntry.brakeDamage >= player.damage.brakes);
+					}
+
+					function _spinoutCheck(moveEntry) {
+						if (moveEntry.cornerDamage) {
+							moveEntry.totalDamage -= 1;
+							moveEntry.cornerDamage -= 1;
+							moveEntry.spinout = true;
+						} else {
+							moveEntry.destroy = true;
+						}
+					}
 				}
 			}
 
@@ -491,7 +482,7 @@ module.exports.bind = function (socket, io, games) {
 			}
 		}
 	}
-        
+
 	function _remainingPlayers(game) {
 		var players = [];
 		for (var i = 0; i < game.players.length; i++) {
@@ -504,15 +495,18 @@ module.exports.bind = function (socket, io, games) {
 	function _sortPlayers(game) {
 		var players = game.players;
 		var spaces = game.map.spaces.length;
-		var locations = [];
+		var locations = []; //all players, including destroyed
+		var sortedLocations = [];
 		for (var i = 0; i < players.length; i++) {
 			var player = players[i];
+			locations.push(player.lap * spaces + player.location);
 			if (!player.destroyed)
-				locations.push(player.lap * spaces + player.location);
+				sortedLocations.push(player.lap * spaces + player.location);
 		}
 		console.log(locations);
-		var sortedLocations = deepCopy(locations); //need the original to find the players again
-		sortedLocations.sort();
+		sortedLocations.sort(function (a, b) {
+			return a - b
+		});
 		console.log(sortedLocations);
 		for (var i = sortedLocations.length - 1; i >= 0; i--) {
 			game.playerOrder.push(locations.indexOf(sortedLocations[i]));
@@ -521,11 +515,11 @@ module.exports.bind = function (socket, io, games) {
 	}
 
 	function _gameOver(game) {
-                var winnerNames = [];
-                for (var i = 0; i < game.winners.length; i++) 
-                    winnerNames.push(game.players[game.winners[i]]);
+		var winnerNames = [];
+		for (var i = 0; i < game.winners.length; i++)
+			winnerNames.push(game.players[game.winners[i]].name);
 		var message = {
-			rankings: winnerNames
+			rankings : winnerNames
 		};
 		io.to(game.id).emit("gameOver", message);
 		game.running = false;
@@ -534,36 +528,39 @@ module.exports.bind = function (socket, io, games) {
 		games.gameOver(game);
 	}
 
-	function _applyDamage(game, player, move) {
+	function _applyMoveDamage(game, player, move) {
+		var dangerDamage = 0;
+		for (var i = 0; i < move.pathDanger; i++)
+			if (_percentChance(5))
+				dangerDamage++;
+		if (dangerDamage)
+			_sysMessage(game, player.name + " took " + dangerDamage + " suspension damage from dangerous spaces");
 		if (!game.advanced)
 			simpleDamage();
 		else
 			advancedDamage();
 		if (move.destroy) {
-                    _destroyPlayer(game, player);
+			_destroyPlayer(game, player);
 		}
 
 		function simpleDamage() {
+			player.damage -= dangerDamage;
+			if (player.damage <= 0)
+				move.destroy = true;
 			player.damage -= move.totalDamage;
 			if (player.damage <= 0)
 				move.destroy = true;
 			if (move.totalDamage > 0)
-				io.to(game.id).emit("chatMessage", {
-					from : player.name,
-					message : "I took " + move.totalDamage + " damage"
-				});
-			else if (move.totalDamge < 0)
-				io.to(game.id).emit("chatMessage", {
-					from : player.name,
-					message : (0 - move.totalDamage) + " damage was repaired in the pits."
-				});
+				_sysMessage(game, player.name + " took " + move.totalDamage + " damage");
+			else if (move.totalDamage < 0)
+				_sysMessage(game, player.name + " repaired " + (0 - move.totalDamage) + " damage in the pits.");
 		}
 
 		function advancedDamage() {
-			io.to(game.id).emit("chatMessage", {
-				from : "System",
-				message : "Damage for advanced games isn't implemented!"
-			});
+			player.damage.tires -= move.tireDamage;
+			player.damage.tires -= move.cornerDamage;
+			player.damage.brakes -= move.brakeDamage;
+			player.damage.suspension -= dangerDamage;
 		}
 	}
 
@@ -574,7 +571,14 @@ module.exports.bind = function (socket, io, games) {
 	function _checkDamage(game, player) {
 		if (!game.advanced) {
 			if (player.damage <= 0) {
-                                destroyPlayer(game, player);
+				_destroyPlayer(game, player);
+			}
+		} else {
+			for (var key in player.damage) {
+				if (player.damage[key] <= 0) {
+					_destroyPlayer(game, player);
+					return;
+				}
 			}
 		}
 	}
@@ -612,44 +616,63 @@ module.exports.bind = function (socket, io, games) {
 				} else {
 					p.damage.body--;
 				}
-				io.to(game.id).emit("chatMessage", {
-					from : p.name,
-					message : "I take 1 body damage"
-				});
+				_sysMessage(game, p.name + " takes 1 body damage from collision - this space is now dangerous!");
+				_markDangerousSpace(game, p.location);
 				_checkDamage(game, p);
 			} else
-				io.to(game.id).emit("chatMessage", {
-					from : p.name,
-					message : "No damage for me!"
-				});
+				_sysMessage(game, p.name + " takes no damage from collision");
 		}
 	}
-        
-        function _ordinality(ordinal) {
-            
-            var suffix = "th";
-            if (ordinal <10 || ordinal > 20) //teens are all "th"
-            switch (ordinal%10) {
-                case 1: suffix= "st"; break;
-                case 2: suffix= "nd"; break;
-                case 3: suffix= "rd"; break;
-            }
-            return ordinal+suffix;
-        }
-        
-        function _destroyPlayer(game, player) {
-            var message = player.name + " is out of the race!";
-            var playerIndex = game.players.indexOf(player);
-            var place = game.winners.indexOf(playerIndex);
-            if (place >= 0) {
-                game.winners.splice(place,1);
-                message = player.name+" is out of the race, and forfeits "+_ordinality(place+1)+" place!";
-            }
-            io.to(game.id).emit("chatMessage", {
-                    from : "System",
-                    message : message
-            });
-            player.destroyed = true;
-        }
 
+	function _ordinality(ordinal) {
+
+		var suffix = "th";
+		if (ordinal < 10 || ordinal > 20) //teens are all "th"
+			switch (ordinal % 10) {
+			case 1:
+				suffix = "st";
+				break;
+			case 2:
+				suffix = "nd";
+				break;
+			case 3:
+				suffix = "rd";
+				break;
+			}
+		return ordinal + suffix;
+	}
+
+	function _destroyPlayer(game, player) {
+		var message = player.name + " is out of the race!  This space is now dangerous!";
+		var playerIndex = game.players.indexOf(player);
+		var place = game.winners.indexOf(playerIndex);
+		if (place >= 0) {
+			message = player.name + " will be rewarded " + _ordinality(place + 1) + " place posthumously.";
+		}
+		_sysMessage(game, message);
+		_markDangerousSpace(game, player.location);
+		player.location = -1;
+		player.destroyed = true;
+	}
+
+	function _markDangerousSpace(game, spaceIndex) {
+		if (game.dangerSpaces.indexOf(spaceIndex) < 0) {
+			game.dangerSpaces.push(spaceIndex);
+			io.to(game.id).emit("dangerSpaces", game.dangerSpaces);
+		}
+	}
+
+	function _sysMessage(game, message) {
+		io.to(game.id).emit("sysMessage", message);
+	}
+
+	function _applyEngineDamage(game, player) {
+		_markDangerousSpace(game, player.location);
+		if (!game.advanced) {
+			player.damage--;
+		} else {
+			player.damage.engine--;
+		}
+		_checkDamage(game, player);
+	}
 };

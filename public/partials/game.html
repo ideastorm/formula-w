@@ -17,7 +17,11 @@ limitations under the License.
     <div id="fw-game-view" class="fw-game-runtime">
         <div style="background-image: url('maps/{{map.name}}.png'); position:relative" 
                 ng-style="{width:map.width+'px', height: map.height+'px'}">
-            <img ng-repeat="player in players" 
+            <img ng-repeat="dangerSpace in game.dangerSpaces"
+                 src="markers/danger.png"
+                 class="fw-game-icon"
+                 ng-style="buildIconStyle(dangerSpace)">                
+            <img ng-repeat="player in players | filter:activePlayers" 
                  ng-class="animationClass(player)"
                  class="fw-game-icon animate-move" 
                  ng-show="player.car" 
@@ -28,12 +32,12 @@ limitations under the License.
                  ng-src="markers/{{damageIndex(moveOption)}}.png"
                  ng-click="selectMoveOption($index)"
                  ng-style="buildIconStyle(moveOption)"
-                 title="{{moveOption.damageMsg}}">
+                 ng-attr-title="{{damageMessage(moveOption)}}">
             <img ng-repeat="moveOption in opponentMoves"
                  class="fw-game-icon"
                  ng-src="markers/{{otherDamageIndex(moveOption)}}.png"
                  ng-style="buildIconStyle(moveOption)"
-                 title="{{moveOption.damageMsg}}">
+                 ng-attr-title="{{damageMessage(moveOption)}}">
         </div>
     </div>
     <div id="playerDash">
@@ -90,14 +94,18 @@ limitations under the License.
 			<span ng-show="gear == 6">19-30</span>
 			spaces
 		</div>
-        <div id="chat-window">
-            <div id="chat-box">
+        <div class="chat-window">
+            <div class="chat-box" id="playerChat">
                 <div ng-repeat="message in recentMessages">{{message.from}}: {{message.message}}</div>
             </div>
             <form ng-submit="sendChat()">
                 <input id="chat-entry" type="text" ng-model="chatMessage"><input type="submit" value="Send">
             </form>
+            <div class="chat-box" id="systemChat">
+                <div ng-repeat="message in systemMessages">{{message.text}}</div>
+            </div>
 			<a href="credits.html" target="creditsWindow">Credits</a>
+            <a href="" ng-click="showGameState = !showGameState">Game State</a>
         </div>
         <div ng-if="rankings && gameOver" class="end-game-modal">
             <h3>Rankings</h3>
@@ -108,5 +116,8 @@ limitations under the License.
         <div ng-if="gameOver && !rankings" class="end-game-modal">
             <h3>You all lose!</h3>
         </div>
+    </div>
+    <div id="gameState" ng-if="showGameState">
+        <pre>{{game | json}}</pre>
     </div>
 </div>

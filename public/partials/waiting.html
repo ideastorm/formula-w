@@ -19,11 +19,21 @@ limitations under the License.
 
 	<div class="fw-div">
 		<h3>Map</h3>
-		<select ng-model="mapName" ng-show="hosting()">
+		<select ng-model="mapName" ng-show="hosting()" ng-change="updateMap()">
 			<option ng-repeat="map in mapNames" value="{{map}}">{{map}}</option>
 		</select>
 		<div ng-show="!hosting()">{{mapName}}</div>
 		<img src="maps/{{mapName}}-preview.png">
+        <div ng-show="hosting()">
+            <label>Laps</label> 
+            <select ng-model="lapCount" ng-options="opt.count as opt.count for opt in lapOptions" ng-change="updateLaps()"></select><br>
+            <label>Advanced Damage</label>
+            <input type="checkbox" ng-model="advancedDamage" ng-change="updateDamage()">
+        </div>
+        <div ng-show="!hosting()">
+            Laps: {{lapCount}}<br/>
+            Damage mode: {{damageMode()}}
+        </div>
 	</div>
 	<div class="fw-div">
 		<h3>Players</h3>
