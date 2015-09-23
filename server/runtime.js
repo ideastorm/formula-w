@@ -211,7 +211,7 @@ module.exports.bind = function (socket, io, games) {
 		}
 	}
 
-	function _movementPoints(gear) {
+	function _movementPoints(gear, speedBoost) {
 		var options;
 		switch (gear) {
 		case 1:
@@ -235,6 +235,12 @@ module.exports.bind = function (socket, io, games) {
 		default:
 			return 1;
 		}
+                if (speedBoost) {
+                    var targetLength = Math.ceil(options.length / 2);
+                    while (options.length > targetLength) {
+                        options.shift();
+                    }
+                }
 		var index = Math.floor(Math.random() * options.length);
 		return options[index];
 	}
@@ -243,7 +249,7 @@ module.exports.bind = function (socket, io, games) {
 		var map = game.map;
 		var corners = map.corners;
 		var playerLocations = _getPlayerLocations(game.players);
-		var movePoints = _movementPoints(player.activeGear);
+		var movePoints = _movementPoints(player.activeGear, game.playerOrder.length < 1);
 
 		if (typeof player.firstRoll === 'undefined') {
 			var rand = Math.ceil(20 * Math.random());
