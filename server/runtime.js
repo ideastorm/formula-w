@@ -557,9 +557,13 @@ module.exports.bind = function (socket, io, games) {
 		}
 
 		function advancedDamage() {
+                    if (move.tireDamage)
 			player.damage.tires -= move.tireDamage;
+                    if (move.cornerDamage)
 			player.damage.tires -= move.cornerDamage;
+                    if (move.brakeDamage)
 			player.damage.brakes -= move.brakeDamage;
+                    if (dangerDamage)
 			player.damage.suspension -= dangerDamage;
 		}
 	}

@@ -40,6 +40,11 @@ limitations under the License.
                  ng-attr-title="{{damageMessage(moveOption)}}">
         </div>
     </div>
+        <div class="chat-window" id="sysChatWindow">
+            <div class="chat-box" id="systemChat" style="height:50px">
+                <div ng-repeat="message in systemMessages">{{message.text}}</div>
+            </div>
+        </div>
     <div id="playerDash">
         Waiting for: {{players[game.activePlayer].name}}
         <img class="fw-player-icon" ng-show="players[game.activePlayer].car" ng-src="cars/{{players[game.activePlayer].car}}"><br>
@@ -101,9 +106,6 @@ limitations under the License.
             <form ng-submit="sendChat()">
                 <input id="chat-entry" type="text" ng-model="chatMessage"><input type="submit" value="Send">
             </form>
-            <div class="chat-box" id="systemChat">
-                <div ng-repeat="message in systemMessages">{{message.text}}</div>
-            </div>
 			<a href="credits.html" target="creditsWindow">Credits</a>
             <a href="" ng-click="showGameState = !showGameState">Game State</a>
         </div>
@@ -118,6 +120,6 @@ limitations under the License.
         </div>
     </div>
     <div id="gameState" ng-if="showGameState">
-        <pre>{{game | json}}</pre>
+        <pre>{{subMap() | json}}</pre>
     </div>
 </div>

@@ -21,6 +21,11 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			var game = $scope.game = Games.currentGame;
 			var showGameState = false;
 			var messageQueue = [];
+                        $scope.subMap = function(){
+                            var copy = angular.copy(game);
+                            copy.map = {};
+                            return copy;
+                        };
 
 			notifications.requestNotification();
 
@@ -90,8 +95,10 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			$scope.damageLeft = function (player) {
 				if (!game.advanced) {
 					return player.damage;
-				} else
-					return "Adv. Dmg not implemented";
+				} else {
+                                    var d = player.damage;
+					return d.engine+d.transmission+d.suspension+d.brakes+d.tires+d.body;
+                                }
 			};
 			$scope.selectMoveOption = function (moveOptionIndex) {
 				Messaging.send("selectMove", moveOptionIndex);

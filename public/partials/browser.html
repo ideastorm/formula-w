@@ -21,6 +21,8 @@ limitations under the License.
 				<tr>
 					<th>Host</th>
 					<th>Map</th>
+                                        <th>Laps</th>
+                                        <th>Damage Mode</th>
 					<th>Players</th>
 					<th></th>
 				</tr>
@@ -29,13 +31,15 @@ limitations under the License.
 				<tr ng-repeat="game in games">
 					<td>{{game.players[0].name}}</td>
 					<td>{{game.mapName}}</td>
+                                        <td>{{game.laps}}</td>
+                                        <td>{{game.advanced?"Advanced":"Basic"}}</td>
 					<td>{{game.players.length}}/{{game.maxPlayers}}</td>
 					<td>
 						<button ng-show="player.valid" ng-click="join(game)">{{joinText(game)}}</button>
 					</td>
 				</tr>
 				<tr ng-show="games.length < 1">
-					<td colspan="4">There are currently no open games</td>
+					<td colspan="6">There are currently no open games</td>
 				</tr>
 			</tbody>
 		</table>

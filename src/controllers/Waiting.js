@@ -187,6 +187,8 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 					$location.url('/');
 
 				$scope.$apply(function () {
+                                        $scope.lapCount = data.laps;
+                                        $scope.advancedDamage = data.advanced;
 					$scope.game = Games.currentGame;
 					$scope.players = data.players;
 					$scope.map = data.map;
