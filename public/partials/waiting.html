@@ -67,5 +67,14 @@ limitations under the License.
 		</table>
 		<button ng-show="hosting() && playersReady()" ng-click="start()">Start Game</button>
 	</div>
+        <div class="chat-window">
+            <div class="chat-box" id="playerChat">
+                <div ng-repeat="message in recentMessages">{{message.from}}: {{message.message}}</div>
+            </div>
+            <form ng-submit="sendChat()">
+                <input id="chat-entry" type="text" ng-model="chatMessage"><input type="submit" value="Send">
+            </form>
+        </div>
+    
 	<h4 ng-show="!inGame()">You are a spectator</h4>
 </div>

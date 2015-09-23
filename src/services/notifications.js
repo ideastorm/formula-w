@@ -17,12 +17,12 @@
 /* global Notification, angular */
 'use strict';
 
-angular.module('FormulaW').factory("notifications", [ function () {
+angular.module('FormulaW').factory("notifications", [function () {
 			var enable = typeof Notification !== 'undefined';
-            if (enable)
-                enable = (Notification.requestPermission && Notification.close);
+			if (enable)
+				enable = typeof Notification.requestPermission !== 'undefined'
 			var lastNotification;
-            
+
 			var service = {
 				notify : _notify,
 				requestNotification : _request
@@ -32,13 +32,15 @@ angular.module('FormulaW').factory("notifications", [ function () {
 
 			function _notify(title, message) {
 				if (enable) {
-					if (lastNotification)
+					if (lastNotification && typeof lastNotification.close === 'function')
 						lastNotification.close();
 					lastNotification = new Notification(title, {
 							icon : "markers/0.png",
 							body : message
 						});
 					//			notify.onclick = buildOnclick("/#/log/" + job.id, "log" + job.id);
+				} else {
+					console.log("HTML5 notifications are disabled");
 				}
 			}
 
@@ -47,6 +49,8 @@ angular.module('FormulaW').factory("notifications", [ function () {
 					Notification.requestPermission(function (permission) {
 						console.log("Notification permission was " + permission);
 					});
+				} else {
+					console.log("HTML5 notifications are disabled");
 				}
 			}
 		}

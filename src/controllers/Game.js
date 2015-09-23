@@ -29,7 +29,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 
 			notifications.requestNotification();
 
-			$scope.activePlayers = function (value, index, array) {
+			$scope.activePlayers = function (value, index, array) {                
 				return value.location >= 0;
 			};
 
@@ -45,6 +45,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				} else if (typeof item.space === 'number') {
 					space = game.map.spaces[item.space];
 				} else {
+                    console.log("unable to build icon style for unknown item");
 					console.log(item);
 					return '';
 				}
@@ -62,6 +63,25 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					'-webkit-transform' : 'rotate(' + theta + 'deg)'
 				};
 			};
+            
+            $scope.buildDangerStyle = function(spaceIndex) {
+				var space = game.map.spaces[spaceIndex];
+				var left = space.x;
+				var top = space.y;
+				return {
+					left : left + 'px',
+					top : top + 'px'
+				};
+            };
+            
+            $scope.buildExplosionStyle = function() {
+				var left = $scope.explosion.x;
+				var top = $scope.explosion.y;
+				return {
+					left : left + 'px',
+					top : top + 'px'
+				};
+            };
 
 			$scope.damageIndex = function (moveOption) {
 				if (moveOption.destroy)
@@ -82,7 +102,10 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					prefix = "No Damage; ";
 
 				if (moveOption.pathDanger) {
-					prefix += moveOption.pathDanger + " dangerous spaces; ";
+                    var form = "spaces";
+                    if (moveOption.pathDanger === 1)
+                        form = "space";
+					prefix += moveOption.pathDanger + " dangerous "+form+"; ";
 				}
 
 				return prefix + moveOption.damageMsg;
@@ -153,6 +176,31 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					$scope.game.dangerSpaces = spaceList;
 				});
 			});
+            
+            Messaging.register("destroyPlayer", function (playerData) {
+                function _findPlayer() {
+                    for (var i = 0; i < game.players.length; i++) {
+                        if (game.players[i].id === playerData.id)
+                            return game.players[i];
+                    }
+                    return playerData;
+                }
+                $scope.$apply(function() {
+                    var gamePlayer = _findPlayer();                    
+                    var space = game.map.spaces[playerData.location];
+                    $scope.explosion = space;
+                    setTimeout(function(){
+                        $scope.$apply(function(){
+                            gamePlayer.location = -1;
+                        });
+                    },150);
+                    setTimeout(function(){
+                        $scope.$apply(function(){
+                            $scope.explosion = null;
+                        });
+                    },320);
+                });
+            });
 
 			function _setActivePlayer(playerIndex) {
 				game.activePlayer = playerIndex;

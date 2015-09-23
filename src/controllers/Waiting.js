@@ -152,6 +152,33 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 			$scope.updateCars = function (car) {
 				Messaging.send("selectCar", car);
 			};
+            
+   			$scope.recentMessages = [];
+			$scope.sendChat = function () {
+
+				var message = $scope.chatMessage.trim();
+				if (message) {
+					Messaging.send("chatMessage", message);
+					$scope.chatMessage = '';
+				}
+				return false;
+			};
+
+			function _processMessage(message, collection, container) {
+				var chatBox = document.getElementById(container);
+				collection.push(message);
+				if (collection.length > 30)
+					collection.shift();
+				setTimeout(function () {
+					chatBox.scrollTop = chatBox.scrollHeight;
+				}, 1);
+			}
+
+			Messaging.register("chatMessage", function (message) {
+				$scope.$apply(function () {
+					_processMessage(message, $scope.recentMessages, "playerChat");
+				});
+			});
 
 			$scope.$on("$locationChangeStart", function (event) {
 				if ($scope.isRunning())

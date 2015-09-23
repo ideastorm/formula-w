@@ -20,7 +20,7 @@ limitations under the License.
             <img ng-repeat="dangerSpace in game.dangerSpaces"
                  src="markers/danger.png"
                  class="fw-game-icon"
-                 ng-style="buildIconStyle(dangerSpace)">                
+                 ng-style="buildDangerStyle(dangerSpace)">                
             <img ng-repeat="player in players | filter:activePlayers" 
                  ng-class="animationClass(player)"
                  class="fw-game-icon animate-move" 
@@ -38,6 +38,9 @@ limitations under the License.
                  ng-src="markers/{{otherDamageIndex(moveOption)}}.png"
                  ng-style="buildIconStyle(moveOption)"
                  ng-attr-title="{{damageMessage(moveOption)}}">
+            <img ng-if="explosion" class="fw-game-icon"
+                 src="markers/explosion.gif"
+                 ng-style="buildExplosionStyle()">
         </div>
     </div>
         <div class="chat-window" id="sysChatWindow">
@@ -69,12 +72,20 @@ limitations under the License.
         </table>
         <h4>Car Condition</h4>
         <div ng-show="game.advanced">
-            Engine: {{user.damage.engine}}<br>
-            Transmission: {{user.damage.transmission}}<br>
-            Tires: {{user.damage.tires}}<br>
-            Brakes: {{user.damage.brakes}}<br>
-            Suspension: {{user.damage.suspension}}<br>
-            Body: {{user.damage.body}}
+            <table style="text-align:left">
+            <tr>
+            <td>Engine</td><td>{{user.damage.engine}}</td>
+            <td>Transmission</td><td>{{user.damage.transmission}}</td>
+            </tr>
+            <tr>
+            <td>Tires</td><td>{{user.damage.tires}}</td>
+            <td>Suspension</td><td>{{user.damage.suspension}}</td>
+            </tr>
+            <tr>
+            <td>Brakes</td><td>{{user.damage.brakes}}</td>
+            <td>Body</td><td>{{user.damage.body}}</td>
+            </tr>
+            </table>
         </div>
         <div ng-show="!game.advanced">
             {{user.damage}} Damage Points

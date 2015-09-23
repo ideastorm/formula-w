@@ -76,7 +76,7 @@ module.exports.bind = function (socket, io, games) {
 							"A move will be selected for you in 10 seconds",
 							_autoMoveSelect,
 							10000,
-							30000);
+							50000);
 					}, 100);
 				else
 					io.to(game.id).emit("updatePlayers", game.players);
@@ -109,7 +109,7 @@ module.exports.bind = function (socket, io, games) {
 					player.activeGear = 3; //allows gear 4 or lower
 				}
 				if (move.spinout) {
-                    _sysMessage(game, player.name+" spun out!");
+					_sysMessage(game, player.name + " spun out!");
 					player.activeGear = 0;
 				}
 				_applyMoveDamage(game, player, move);
@@ -137,7 +137,12 @@ module.exports.bind = function (socket, io, games) {
 					_gameOver(game);
 					return;
 				}
-				_nextPlayer();
+				var nextPlayerDelay = 1;
+				if (player.destroyed) {
+					player.location = -1;
+					nextPlayerDelay = 500;
+				}
+				setTimeout(_nextPlayer, nextPlayerDelay);
 			}, delay);
 		}
 	}
@@ -168,7 +173,7 @@ module.exports.bind = function (socket, io, games) {
 				io.to(game.id).emit("currentPlayer", game.activePlayer);
 				_setWarning(nextPlayer,
 					"A gear will be automatically selected in 10 seconds",
-					_autoGearSelect, 10000, 10000);
+					_autoGearSelect, 10000, 35000);
 			}
 		} else {
 			_gameOver(game);
@@ -235,12 +240,12 @@ module.exports.bind = function (socket, io, games) {
 		default:
 			return 1;
 		}
-                if (speedBoost) {
-                    var targetLength = Math.ceil(options.length / 2);
-                    while (options.length > targetLength) {
-                        options.shift();
-                    }
-                }
+		if (speedBoost) {
+			var targetLength = Math.ceil(options.length / 2);
+			while (options.length > targetLength) {
+				options.shift();
+			}
+		}
 		var index = Math.floor(Math.random() * options.length);
 		return options[index];
 	}
@@ -344,6 +349,7 @@ module.exports.bind = function (socket, io, games) {
 			}
 
 			function _pushOption(spaceIndex, isSwerve) {
+				var target = map.spaces[spaceIndex];
 				var distance = entry.distance + 1;
 				var processDownstream = distance < movePoints;
 				var damageMsg = "";
@@ -370,8 +376,8 @@ module.exports.bind = function (socket, io, games) {
 					distance : distance,
 					path : newPath,
 					swerve : isSwerve,
-					allowIn : (space.corner ? true : entry.allowIn),
-					allowOut : (space.corner ? true : entry.allowOut),
+					allowIn : (target.corner ? true : entry.allowIn),
+					allowOut : (target.corner ? true : entry.allowOut),
 					cornerStops : entry.cornerStops,
 					addCornerDamage : entry.addCornerDamage
 				};
@@ -408,7 +414,6 @@ module.exports.bind = function (socket, io, games) {
 				return nextEntry;
 
 				function _processCornerDamage() {
-					var target = map.spaces[spaceIndex];
 					var cornerStops = entry.cornerStops;
 					nextEntry.corner = target.corner;
 					nextEntry.cornerDamage = entry.cornerDamage;
@@ -546,6 +551,7 @@ module.exports.bind = function (socket, io, games) {
 		else
 			advancedDamage();
 		if (move.destroy) {
+			player.location = move.space;
 			_destroyPlayer(game, player);
 		}
 
@@ -563,14 +569,14 @@ module.exports.bind = function (socket, io, games) {
 		}
 
 		function advancedDamage() {
-                    if (move.tireDamage)
-			player.damage.tires -= move.tireDamage;
-                    if (move.cornerDamage)
-			player.damage.tires -= move.cornerDamage;
-                    if (move.brakeDamage)
-			player.damage.brakes -= move.brakeDamage;
-                    if (dangerDamage)
-			player.damage.suspension -= dangerDamage;
+			if (move.tireDamage)
+				player.damage.tires -= move.tireDamage;
+			if (move.cornerDamage)
+				player.damage.tires -= move.cornerDamage;
+			if (move.brakeDamage)
+				player.damage.brakes -= move.brakeDamage;
+			if (dangerDamage)
+				player.damage.suspension -= dangerDamage;
 		}
 	}
 
@@ -659,6 +665,7 @@ module.exports.bind = function (socket, io, games) {
 		if (place >= 0) {
 			message = player.name + " will be rewarded " + _ordinality(place + 1) + " place posthumously.";
 		}
+		io.to(game.id).emit("destroyPlayer", player);
 		_sysMessage(game, message);
 		_markDangerousSpace(game, player.location);
 		player.location = -1;
