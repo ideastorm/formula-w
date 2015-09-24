@@ -354,8 +354,10 @@ function _initializeDamage(game) {
 }
 
 function _finalizeMap(map) {
+        var cornerProcessingQueue = [];
 	for (var i = 0; i < map.spaces.length; i++) {
 		var space = map.spaces[i];
+                cornerProcessingQueue.push(space);
 		space.inside = null;
 		space.outside = null;
 		space.forward = null;
@@ -399,6 +401,27 @@ function _finalizeMap(map) {
 			map.spaces[corner.spaces[spaceIndex]].corner = +cornerIndex + 1;
 		}
 	}
+
+        processCornerDistances();
+
+        function processCornerDistances() {
+            console.log("finding distances to next corner transition");
+            while (cornerProcessingQueue.length) {
+                var space = cornerProcessingQueue.shift();
+                findCornerDistance(space);
+                if (!space.cornerDistance)
+                    cornerProcessingQueue.push(space);
+            }
+            console.log("done");
+        }
+    
+        function findCornerDistance(space) {
+            var fwdSpace = map.spaces[space.forward];
+            if (space.corner !== fwdSpace.corner) {
+                space.cornerDistance = 1;
+            } else if (typeof fwdSpace.cornerDistance === 'number')
+                space.cornerDistance = fwdSpace.cornerDistance+1;
+        }
 
 	function _isInner(spaceIndex) {
 		return map.insideCorridors.indexOf(spaceIndex) >= 0;
