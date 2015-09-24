@@ -26,7 +26,7 @@ module.exports.bind = function (socket, io, games) {
 		clearTimeout(autoMoveTimeout);
 		function _warnPlayer() {
 			autoMoveTimeout = setTimeout(action, delay);
-			io.to(io.users[player.id]).emit("sysMessage", message);
+			io.to(io.users[player.id]).emit("sysWarning", message);
 		}
 		autoMoveTimeout = setTimeout(_warnPlayer, warnDelay);
 	}
@@ -132,17 +132,19 @@ module.exports.bind = function (socket, io, games) {
 					game.winners.push(playerIndex);
 					player.destroyed = true;
 				}
-				var gameOverThreshold = game.winners.length ? 1 : 0;
-				if (_remainingPlayers(game).length <= gameOverThreshold) {
-					_gameOver(game);
-					return;
-				}
 				var nextPlayerDelay = 1;
 				if (player.destroyed) {
 					player.location = -1;
 					nextPlayerDelay = 500;
 				}
-				setTimeout(_nextPlayer, nextPlayerDelay);
+                                var nextFn = _nextPlayer;
+				if (_remainingPlayers(game).length === 0) {
+                                    nextFn = function(){
+					_gameOver(game);
+                                    };
+				}
+                                //Allows for animation time before moving on
+				setTimeout(nextFn, nextPlayerDelay);
 			}, delay);
 		}
 	}
@@ -526,13 +528,17 @@ module.exports.bind = function (socket, io, games) {
 	}
 
 	function _gameOver(game) {
-		var winnerNames = [];
-		for (var i = 0; i < game.winners.length; i++)
-			winnerNames.push(game.players[game.winners[i]].name);
-		var message = {
-			rankings : winnerNames
-		};
-		io.to(game.id).emit("gameOver", message);
+		var rankings = [];
+                var i;
+		for (i = 0; i < game.winners.length; i++) {
+			rankings.push({place:i+1,name:game.players[game.winners[i]].name});
+                    }
+                for (i = 0; i < game.players.length; i++) {
+                    if (game.winners.indexOf(i) < 0) {
+                        rankings.push({place:'DNF', name:game.players[i].name});
+                    }
+                }
+		io.to(game.id).emit("gameOver", {rankings:rankings});
 		game.running = false;
 		game.players = [];
 		game.activePlayer = null;

@@ -120,17 +120,23 @@ limitations under the License.
 			<a href="credits.html" target="creditsWindow">Credits</a>
             <a href="" ng-click="showGameState = !showGameState">Game State</a>
         </div>
-        <div ng-if="rankings && gameOver" class="end-game-modal">
-            <h3>Rankings</h3>
-            <h4 ng-repeat="name in rankings">
-                {{$index+1}}: {{name}}
-            </h4>
-        </div>
-        <div ng-if="gameOver && !rankings" class="end-game-modal">
-            <h3>You all lose!</h3>
-        </div>
     </div>
     <div id="gameState" ng-if="showGameState">
         <pre>{{subMap() | json}}</pre>
     </div>
+    <div class="notifyWindow" ng-show="notification">
+        <h3>{{notification}}</h3>
+    </div>
+        <div ng-if="rankings && gameOver" class="notifyWindow">
+            <h2>GAME OVER</h2>
+            <h3>Rankings</h3>
+                <table>
+                    <tr ng-repeat="entry in rankings">
+                        <td>{{entry.place}}</td><td>{{entry.name}}</td>
+                    </tr>
+                </table>
+            <div style="margin-top:1em">
+            <a href="#/">Done</a>
+            </div>
+        </div>
 </div>

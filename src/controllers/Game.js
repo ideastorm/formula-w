@@ -21,6 +21,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			var game = $scope.game = Games.currentGame;
 			var showGameState = false;
 			var messageQueue = [];
+                       
                         $scope.subMap = function(){
                             var copy = angular.copy(game);
                             copy.map = {};
@@ -28,6 +29,18 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
                         };
 
 			notifications.requestNotification();
+                        
+                        function _notify(message) {
+                            $scope.notification = message;
+                            if (message) 
+                                setTimeout(function(){
+                                    $scope.$apply(function(){
+                                        _notify(null);
+                                    });
+                                },3000);
+                        }
+                        
+                        $scope.notify = _notify;
 
 			$scope.activePlayers = function (value, index, array) {                
 				return value.location >= 0;
@@ -163,6 +176,12 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					}, $scope.systemMessages, "systemChat");
 				});
 			});
+                        
+                        Messaging.register("sysWarning", function(message){
+                            $scope.$apply(function(){
+                                _notify(message);
+                            });
+                        });
 
 			Messaging.register("currentPlayer", function (index) {
 				$scope.$apply(function () {
@@ -197,6 +216,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
                     setTimeout(function(){
                         $scope.$apply(function(){
                             $scope.explosion = null;
+                    _notify(playerData.name+" is out of the race!");
                         });
                     },320);
                 });
@@ -208,6 +228,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				$scope.myTurn = (game.players[playerIndex].id === player.userId);
 				$scope.gearSelected = false;
 				if ($scope.myTurn) {
+                                    _notify("Your Turn!");
 					notifications.notify("Formula W", "It's your turn");
 				}
 				_scrollToActivePlayer();
@@ -277,8 +298,10 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 							var location = path.shift();
 							if (player.location > location)
 								player.lap++;
-							if (player.location === location)
+							if (player.location === location) {
 								player.spinout = true;
+                                                                _notify("Spin out!");
+                                                            }
 							player.location = location;
 							setTimeout(_nextSpace, 2000 / speed);
 						}
