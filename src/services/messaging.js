@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2015 Phillip Hayward <phil@pjhayward.net>.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,22 +19,26 @@
 var io = require('socket.io-client');
 
 angular.module('FormulaW').factory("Messaging", ['$location', function ($location) {
-		var _socket = io($location.protocol() + "://" + $location.host() + ":" + $location.port() + "/");
+			var _socket = io($location.protocol() + "://" + $location.host() + ":" + $location.port() + "/");
 
-		var service = {
-			register: _register,
-			send: _send
-		};
+			var service = {
+				register : _register,
+				send : _send
+			};
 
-		return service;
+			return service;
 
-		function _register(event, callback) {
-			console.log("registering callback for " + event);
-			_socket.on(event, callback);
+			function _register(event, callback) {
+				console.log("registering callback for " + event);
+				_socket.on(event, function (message) {
+					console.log("received " + event);
+					callback(message);
+				});
+			}
+
+			function _send(event, message) {
+				console.log("sending " + message + " to " + event);
+				_socket.emit(event, message);
+			}
 		}
-
-		function _send(event, message) {
-			console.log("sending " + message + " to " + event);
-			_socket.emit(event, message);
-		}
-	}]);
+	]);

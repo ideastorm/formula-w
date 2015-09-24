@@ -32,15 +32,25 @@ io.on('connection', function (socket) {
 		console.log("userId " + data + " connected");
 		socket.userId = data;
 		socket.emit("userName", players.lookup(data));
+        runtime.bind(socket, io, games);
+        console.log("runtime bound for "+data);
 	});
 
 	games.bind(socket, io, players);
 	players.bind(socket);
-	runtime.bind(socket, io, games);
-        chat.bind(socket, io, players);
+    chat.bind(socket, io, players);
+    
+    socket.on('error', function(){
+        console.log("socket error");
+        console.log(arguments);
+    });
 
 	socket.on('disconnect', function () {
-
+        var game = games.lookup(socket);
+        if (game) 
+            socket.leave(game.id);
+        if (runtime.disconnect)
+            runtime.disconnect(socket);
 	});
 });
 

@@ -37,7 +37,7 @@ var update = function(bundle) {
 
     writeStream.on('close', function () {
         if (!didError) {
-            console.error(chalk.cyan(bytes) + chalk.grey(' bytes written to ') + chalk.cyan(path.resolve('./public/bundle.js'))
+            console.error(chalk.red(new Date())+chalk.cyan(bytes) + chalk.grey(' bytes written to ') + chalk.cyan(path.resolve('./public/bundle.js'))
                 + ' (' + (time / 1000).toFixed(2) + ' seconds)'
             );
         }

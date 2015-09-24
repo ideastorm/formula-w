@@ -18,7 +18,6 @@
 
 var deepCopy = require('./deepCopy');
 var _sockets = {};
-var autoMoveTimeout;
 
 module.exports.bind = function (socket, io, games) {
     console.log("binding socket info for "+socket.userId+" to socket "+socket.id);
@@ -54,12 +53,12 @@ function playerSocket(socket, io, games) {
 			delay /= 15;
 			warnDelay /= 15;
 		}
-		clearTimeout(autoMoveTimeout);
+		clearTimeout(game.autoMoveTimeout);
 		function _warnPlayer() {
-			autoMoveTimeout = setTimeout(action, delay);
+			game.autoMoveTimeout = setTimeout(action, delay);
 			io.to(io.users[player.id]).emit("sysWarning", message);
 		}
-		autoMoveTimeout = setTimeout(_warnPlayer, warnDelay);
+		game.autoMoveTimeout = setTimeout(_warnPlayer, warnDelay);
 	}
 
 	function _autoGearSelect() {
@@ -91,8 +90,8 @@ function playerSocket(socket, io, games) {
 	}
 
 	function _gearSelect(selectedGear, forcePlayer) {
-		clearTimeout(autoMoveTimeout);
 		var game = games.lookup(socket);
+		clearTimeout(game.autoMoveTimeout);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
 		if (typeof forcePlayer === 'number')
 			playerIndex = forcePlayer;
@@ -116,8 +115,8 @@ function playerSocket(socket, io, games) {
 	}
 
 	function _selectMove(selectedMove, forcePlayer) {
-		clearTimeout(autoMoveTimeout);
 		var game = games.lookup(socket);
+		clearTimeout(game.autoMoveTimeout);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
 		if (typeof forcePlayer === 'number')
 			playerIndex = forcePlayer;
@@ -130,6 +129,7 @@ function playerSocket(socket, io, games) {
 			if (move.spinout) {
 				move.path.push(move.path[move.path.length - 1]); //duplicate the last entry
 			}
+			console.log(move.path);
 			io.to(game.id).emit("activePlayerMove", move.path);
 			var delay = 2250;
 			console.log("delay before finishing processing: " + delay);

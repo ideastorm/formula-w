@@ -21,28 +21,28 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			var game = $scope.game = Games.currentGame;
 			var showGameState = false;
 			var messageQueue = [];
-                       
-                        $scope.subMap = function(){
-                            var copy = angular.copy(game);
-                            copy.map = {};
-                            return copy;
-                        };
+
+			$scope.subMap = function () {
+				var copy = angular.copy(game);
+				copy.map = {};
+				return copy;
+			};
 
 			notifications.requestNotification();
-                        
-                        function _notify(message) {
-                            $scope.notification = message;
-                            if (message) 
-                                setTimeout(function(){
-                                    $scope.$apply(function(){
-                                        _notify(null);
-                                    });
-                                },3000);
-                        }
-                        
-                        $scope.notify = _notify;
 
-			$scope.activePlayers = function (value, index, array) {                
+			function _notify(message) {
+				$scope.notification = message;
+				if (message)
+					setTimeout(function () {
+						$scope.$apply(function () {
+							_notify(null);
+						});
+					}, 3000);
+			}
+
+			$scope.notify = _notify;
+
+			$scope.activePlayers = function (value, index, array) {
 				return value.location >= 0;
 			};
 
@@ -58,7 +58,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				} else if (typeof item.space === 'number') {
 					space = game.map.spaces[item.space];
 				} else {
-                    console.log("unable to build icon style for unknown item");
+					console.log("unable to build icon style for unknown item");
 					console.log(item);
 					return '';
 				}
@@ -76,8 +76,8 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					'-webkit-transform' : 'rotate(' + theta + 'deg)'
 				};
 			};
-            
-            $scope.buildDangerStyle = function(spaceIndex) {
+
+			$scope.buildDangerStyle = function (spaceIndex) {
 				var space = game.map.spaces[spaceIndex];
 				var left = space.x;
 				var top = space.y;
@@ -85,16 +85,16 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					left : left + 'px',
 					top : top + 'px'
 				};
-            };
-            
-            $scope.buildExplosionStyle = function() {
+			};
+
+			$scope.buildExplosionStyle = function () {
 				var left = $scope.explosion.x;
 				var top = $scope.explosion.y;
 				return {
 					left : left + 'px',
 					top : top + 'px'
 				};
-            };
+			};
 
 			$scope.damageIndex = function (moveOption) {
 				if (moveOption.destroy)
@@ -115,10 +115,10 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					prefix = "No Damage; ";
 
 				if (moveOption.pathDanger) {
-                    var form = "spaces";
-                    if (moveOption.pathDanger === 1)
-                        form = "space";
-					prefix += moveOption.pathDanger + " dangerous "+form+"; ";
+					var form = "spaces";
+					if (moveOption.pathDanger === 1)
+						form = "space";
+					prefix += moveOption.pathDanger + " dangerous " + form + "; ";
 				}
 
 				return prefix + moveOption.damageMsg;
@@ -132,9 +132,10 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				if (!game.advanced) {
 					return player.damage;
 				} else {
-                                    var d = player.damage;
-					return d.engine+d.transmission+d.suspension+d.brakes+d.tires+d.body;
-                                }
+					var d = player.damage;
+
+					return "E:" + d.engine + " Ti:" + d.tires + " Br:" + d.brakes + " Tr:" + d.transmission + " S:" + d.suspension + " Bo:" + d.body;
+				}
 			};
 			$scope.selectMoveOption = function (moveOptionIndex) {
 				Messaging.send("selectMove", moveOptionIndex);
@@ -162,6 +163,10 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				}, 1);
 			}
 
+			Messaging.register("checkHeartbeat", function () {
+				Messaging.send("heartbeat", {});
+			});
+
 			Messaging.register("chatMessage", function (message) {
 				$scope.$apply(function () {
 					_processMessage(message, $scope.recentMessages, "playerChat");
@@ -176,12 +181,12 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					}, $scope.systemMessages, "systemChat");
 				});
 			});
-                        
-                        Messaging.register("sysWarning", function(message){
-                            $scope.$apply(function(){
-                                _notify(message);
-                            });
-                        });
+
+			Messaging.register("sysWarning", function (message) {
+				$scope.$apply(function () {
+					_notify(message);
+				});
+			});
 
 			Messaging.register("currentPlayer", function (index) {
 				$scope.$apply(function () {
@@ -195,32 +200,32 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					$scope.game.dangerSpaces = spaceList;
 				});
 			});
-            
-            Messaging.register("destroyPlayer", function (playerData) {
-                function _findPlayer() {
-                    for (var i = 0; i < game.players.length; i++) {
-                        if (game.players[i].id === playerData.id)
-                            return game.players[i];
-                    }
-                    return playerData;
-                }
-                $scope.$apply(function() {
-                    var gamePlayer = _findPlayer();                    
-                    var space = game.map.spaces[playerData.location];
-                    $scope.explosion = space;
-                    setTimeout(function(){
-                        $scope.$apply(function(){
-                            gamePlayer.location = -1;
-                        });
-                    },150);
-                    setTimeout(function(){
-                        $scope.$apply(function(){
-                            $scope.explosion = null;
-                    _notify(playerData.name+" is out of the race!");
-                        });
-                    },320);
-                });
-            });
+
+			Messaging.register("destroyPlayer", function (playerData) {
+				function _findPlayer() {
+					for (var i = 0; i < game.players.length; i++) {
+						if (game.players[i].id === playerData.id)
+							return game.players[i];
+					}
+					return playerData;
+				}
+				$scope.$apply(function () {
+					var gamePlayer = _findPlayer();
+					var space = game.map.spaces[playerData.location];
+					$scope.explosion = space;
+					setTimeout(function () {
+						$scope.$apply(function () {
+							gamePlayer.location = -1;
+						});
+					}, 150);
+					setTimeout(function () {
+						$scope.$apply(function () {
+							$scope.explosion = null;
+							_notify(playerData.name + " is out of the race!");
+						});
+					}, 320);
+				});
+			});
 
 			function _setActivePlayer(playerIndex) {
 				game.activePlayer = playerIndex;
@@ -228,7 +233,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				$scope.myTurn = (game.players[playerIndex].id === player.userId);
 				$scope.gearSelected = false;
 				if ($scope.myTurn) {
-                                    _notify("Your Turn!");
+					_notify("Your Turn!");
 					notifications.notify("Formula W", "It's your turn");
 				}
 				_scrollToActivePlayer();
@@ -283,6 +288,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			Messaging.register("activePlayerMove", function (path) {
 				var playerIndex = game.activePlayer;
 				var player = game.players[playerIndex];
+                player.lastMove = path;
 				var speed = path.length;
 				player.speed = speed;
 
@@ -295,13 +301,15 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				function _nextSpace() {
 					$scope.$apply(function () {
 						if (path.length) {
+                            console.log(path);
+                            console.log(player.location);
 							var location = path.shift();
 							if (player.location > location)
 								player.lap++;
 							if (player.location === location) {
 								player.spinout = true;
-                                                                _notify("Spin out!");
-                                                            }
+								_notify("Spin out!");
+							}
 							player.location = location;
 							setTimeout(_nextSpace, 2000 / speed);
 						}
@@ -338,5 +346,6 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			});
 
 			Messaging.send("join", $routeParams.game);
+			Messaging.send("initPlayerSocket", "reconnect");
 		}
 	]);
