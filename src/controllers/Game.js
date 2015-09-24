@@ -308,7 +308,6 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 								player.lap++;
 							if (player.location === location) {
 								player.spinout = true;
-								_notify("Spin out!");
 							}
 							player.location = location;
 							setTimeout(_nextSpace, 2000 / speed);

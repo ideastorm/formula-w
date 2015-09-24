@@ -18,7 +18,7 @@
 
 var deepCopy = require('./deepCopy');
 var _sockets = {};
-var autoMoveTimeout;
+var autoMoveTimeouts={};
 
 module.exports.bind = function (socket, io, games) {
     console.log("binding socket info for "+socket.userId+" to socket "+socket.id);
@@ -54,12 +54,12 @@ function playerSocket(socket, io, games) {
 			delay /= 15;
 			warnDelay /= 15;
 		}
-		clearTimeout(autoMoveTimeout);
+		clearTimeout(autoMoveTimeouts[game.id]);
 		function _warnPlayer() {
-			autoMoveTimeout = setTimeout(action, delay);
+			autoMoveTimeouts[game.id] = setTimeout(action, delay);
 			io.to(io.users[player.id]).emit("sysWarning", message);
 		}
-		autoMoveTimeout = setTimeout(_warnPlayer, warnDelay);
+		autoMoveTimeouts[game.id] = setTimeout(_warnPlayer, warnDelay);
 	}
 
 	function _autoGearSelect() {
@@ -91,8 +91,8 @@ function playerSocket(socket, io, games) {
 	}
 
 	function _gearSelect(selectedGear, forcePlayer) {
-		clearTimeout(autoMoveTimeout);
 		var game = games.lookup(socket);
+		clearTimeout(autoMoveTimeouts[game.id]);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
 		if (typeof forcePlayer === 'number')
 			playerIndex = forcePlayer;
@@ -116,8 +116,8 @@ function playerSocket(socket, io, games) {
 	}
 
 	function _selectMove(selectedMove, forcePlayer) {
-		clearTimeout(autoMoveTimeout);
 		var game = games.lookup(socket);
+		clearTimeout(autoMoveTimeouts[game.id]);
 		var playerIndex = games.getPlayerIndex(game, socket.userId);
 		if (typeof forcePlayer === 'number')
 			playerIndex = forcePlayer;
@@ -140,7 +140,7 @@ function playerSocket(socket, io, games) {
 					player.activeGear = 3; //allows gear 4 or lower
 				}
 				if (move.spinout) {
-					_sysMessage(game, player.name + " spun out!");
+					_sysNotify(game, player.name + " spun out!");
 					player.activeGear = 0;
 				}
 				_applyMoveDamage(game, player, move);

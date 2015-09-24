@@ -117,7 +117,6 @@ function _bind(socket, io, players) {
 		if (socket.userId && _playerGames[socket.userId]) {
 			var game = _findGame(_playerGames[socket.userId]);
 			if (game) {
-                game.autoMoveTimeout = null;
 				game.running = true;
 				game.map = deepCopy(_maps[game.mapName]);
 				game.winners = [];
