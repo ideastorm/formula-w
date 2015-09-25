@@ -49,11 +49,11 @@ function playerSocket(socket, io, games) {
 
 	function _setWarning(player, message, action, delay, warnDelay) {
 		var game = games.lookup(socket);
-		if (player.disconnected) {
+//		if (player.disconnected) {
 			console.log(player.name + " is disconnected; reducing auto play delays");
 			delay /= 15;
 			warnDelay /= 15;
-		}
+//		}
 		clearTimeout(autoMoveTimeouts[game.id]);
 		function _warnPlayer() {
 			autoMoveTimeouts[game.id] = setTimeout(action, delay);
@@ -67,9 +67,36 @@ function playerSocket(socket, io, games) {
 		if (!game.running)
 			return;
 		var player = game.players[game.activePlayer];
-		var targetGear = Math.min(player.activeGear + 1, Math.max(player.activeGear - 1, 3));
+                var space = game.map.spaces[player.location];
+                var targetDistance = space.cornerEndDistance;
+                var corner = space.corner?game.map.corners[space.corner-1]:null;
+                if (corner) {
+                    if (player.cornerStops < corner.requiredStops) {
+                        //try to make sure we get enough stops
+                        var remainingStops = corner.requiredStops - player.cornerStops;
+                        targetDistance = targetDistance / remainingStops;
+                    } else {
+                        targetDistance = space.cornerStartDistance; //aim for the next corner;
+                    }
+                }
+                var targetGear = _pickGearForDistance(targetDistance);
+		targetGear = Math.min(player.activeGear + 1, Math.max(player.activeGear - 1, targetGear));
 		_gearSelect(targetGear, game.activePlayer);
 	}
+        
+        function _pickGearForDistance(distance) {
+            if (distance < 2)
+                return 1;
+            if (distance < 5)
+                return 2;
+            if (distance < 10)
+                return 3;
+            if (distance < 15)
+                return 4;
+            if (distance < 24)
+                return 5;
+            return 6;
+        }
 
 	function _autoMoveSelect() {
 		var game = games.lookup(socket);

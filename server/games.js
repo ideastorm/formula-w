@@ -409,7 +409,7 @@ function _finalizeMap(map) {
             while (cornerProcessingQueue.length) {
                 var space = cornerProcessingQueue.shift();
                 findCornerDistance(space);
-                if (!space.cornerDistance)
+                if (!space.cornerStartDistance || !space.cornerEndDistance)
                     cornerProcessingQueue.push(space);
             }
             console.log("done");
@@ -417,10 +417,15 @@ function _finalizeMap(map) {
     
         function findCornerDistance(space) {
             var fwdSpace = map.spaces[space.forward];
-            if (space.corner !== fwdSpace.corner) {
-                space.cornerDistance = 1;
-            } else if (typeof fwdSpace.cornerDistance === 'number')
-                space.cornerDistance = fwdSpace.cornerDistance+1;
+            if (space.corner && !fwdSpace.corner) {
+                space.cornerEndDistance = 1;
+            } else if (!space.corner && fwdSpace.corner) {
+                space.cornerStartDistance = 1;
+            } 
+            if (!space.cornerStartDistance && typeof fwdSpace.cornerStartDistance === 'number')
+                space.cornerStartDistance = fwdSpace.cornerStartDistance+1;
+            if (!space.cornerEndDistance && typeof fwdSpace.cornerEndDistance === 'number')
+                space.cornerEndDistance = fwdSpace.cornerEndDistance+1;
         }
 
 	function _isInner(spaceIndex) {
