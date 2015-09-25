@@ -52,7 +52,7 @@ limitations under the License.
 					<td>{{user.name}}</td>
 					<td>
 						<img class="fw-player-icon" ng-show="user.car" ng-src="cars/{{user.car}}">
-						<select ng-show="isMe(user) && user.ready !== 'Ready'" ng-model="user.car" ng-change="updateCars(user.car)">
+						<select ng-show="(isMe(user) && user.ready !== 'Ready') || (user.isAi && hosting())" ng-model="user.car" ng-change="updateCars(user.car, user.id)">
 							<option ng-repeat="car in cars" value="{{car}}">{{car | prettifyFileName }}</option>
 						</select>
 					</td>

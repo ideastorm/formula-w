@@ -124,10 +124,6 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				return prefix + moveOption.damageMsg;
 			};
 
-			$scope.otherDamageIndex = function (moveOption) {
-				return moveOption.destroy ? "death" : "black";
-			};
-
 			$scope.damageLeft = function (player) {
 				if (!game.advanced) {
 					return player.damage;
@@ -228,15 +224,17 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			});
 
 			function _setActivePlayer(playerIndex) {
-				game.activePlayer = playerIndex;
-				game.players[playerIndex].spinout = false;
-				$scope.myTurn = (game.players[playerIndex].id === player.userId);
-				$scope.gearSelected = false;
-				if ($scope.myTurn) {
-					_notify("Your Turn!");
-					notifications.notify("Formula W", "It's your turn");
+				if (typeof playerIndex === 'number') {
+					game.activePlayer = playerIndex;
+					game.players[playerIndex].spinout = false;
+					$scope.myTurn = (game.players[playerIndex].id === player.userId);
+					$scope.gearSelected = false;
+					if ($scope.myTurn) {
+						_notify("Your Turn!");
+						notifications.notify("Formula W", "It' s your turn ");
+					}
+					_scrollToActivePlayer();
 				}
-				_scrollToActivePlayer();
 			}
 
 			$scope.selectGear = function () {
@@ -265,7 +263,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			}
 
 			Messaging.register("updatePlayers", function (data) {
-				console.log("updating player list");
+				console.log(" updating player list ");
 				$scope.$apply(function () {
 					_processPlayerUpdate(data);
 				});
@@ -288,7 +286,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			Messaging.register("activePlayerMove", function (path) {
 				var playerIndex = game.activePlayer;
 				var player = game.players[playerIndex];
-                player.lastMove = path;
+				player.lastMove = path;
 				var speed = path.length;
 				player.speed = speed;
 
@@ -301,8 +299,8 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				function _nextSpace() {
 					$scope.$apply(function () {
 						if (path.length) {
-                            console.log(path);
-                            console.log(player.location);
+							console.log(path);
+							console.log(player.location);
 							var location = path.shift();
 							if (player.location > location)
 								player.lap++;
@@ -345,6 +343,6 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 			});
 
 			Messaging.send("join", $routeParams.game);
-			Messaging.send("initPlayerSocket", "reconnect");
+			Messaging.send("initPlayerSocket", {});
 		}
 	]);

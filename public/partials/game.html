@@ -35,7 +35,7 @@ limitations under the License.
                  ng-attr-title="{{damageMessage(moveOption)}}">
             <img ng-repeat="moveOption in opponentMoves"
                  class="fw-game-icon"
-                 ng-src="markers/{{otherDamageIndex(moveOption)}}.png"
+                 ng-src="markers/{{damageIndex(moveOption)}}.png"
                  ng-style="buildIconStyle(moveOption)"
                  ng-attr-title="{{damageMessage(moveOption)}}">
             <img ng-if="explosion" class="fw-game-icon"

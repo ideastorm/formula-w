@@ -18,12 +18,12 @@
 
 var deepCopy = require('./deepCopy');
 var _sockets = {};
-var autoMoveTimeouts={};
+var autoMoveTimeouts = {};
 
 module.exports.bind = function (socket, io, games) {
-    console.log("binding socket info for "+socket.userId+" to socket "+socket.id);
+	console.log("binding socket info for " + socket.userId + " to socket " + socket.id);
 	_sockets[socket.userId] = playerSocket(socket, io, games);
-    console.log("disconnect function stored for "+socket.userId);
+	console.log("disconnect function stored for " + socket.userId);
 };
 
 module.exports.disconnect = function (socket) {
@@ -34,14 +34,19 @@ module.exports.disconnect = function (socket) {
 };
 
 function playerSocket(socket, io, games) {
-    console.log("initializing game runtime for web socket "+socket.id);
+	console.log("initializing game runtime for web socket " + socket.id);
 	socket.on("initPlayerSocket", function () {
-        console.log("marking player as connected");
-        var game = games.lookup(socket);
+		var game = games.lookup(socket);
+		console.log("marking player at index "+games.getPlayerIndex(game, socket.userId)+" as connected");
 		var player = games.getPlayer(socket);
 		if (player) {
 			player.disconnected = false;
 		}
+        console.log(autoMoveTimeouts);
+		if (game.host === socket.userId && (typeof autoMoveTimeouts[game.id] === 'undefined')) {
+            console.log("initializing game loop");
+			_nextPlayer();
+        }
 	});
 
 	socket.on('gearSelect', _gearSelect);
@@ -49,11 +54,11 @@ function playerSocket(socket, io, games) {
 
 	function _setWarning(player, message, action, delay, warnDelay) {
 		var game = games.lookup(socket);
-//		if (player.disconnected) {
+		if (player.disconnected) {
 			console.log(player.name + " is disconnected; reducing auto play delays");
 			delay /= 15;
 			warnDelay /= 15;
-//		}
+		}
 		clearTimeout(autoMoveTimeouts[game.id]);
 		function _warnPlayer() {
 			autoMoveTimeouts[game.id] = setTimeout(action, delay);
@@ -67,36 +72,36 @@ function playerSocket(socket, io, games) {
 		if (!game.running)
 			return;
 		var player = game.players[game.activePlayer];
-                var space = game.map.spaces[player.location];
-                var targetDistance = space.cornerEndDistance;
-                var corner = space.corner?game.map.corners[space.corner-1]:null;
-                if (corner) {
-                    if (player.cornerStops < corner.requiredStops) {
-                        //try to make sure we get enough stops
-                        var remainingStops = corner.requiredStops - player.cornerStops;
-                        targetDistance = targetDistance / remainingStops;
-                    } else {
-                        targetDistance = space.cornerStartDistance; //aim for the next corner;
-                    }
-                }
-                var targetGear = _pickGearForDistance(targetDistance);
+		var space = game.map.spaces[player.location];
+		var targetDistance = space.cornerEndDistance;
+		var corner = space.corner ? game.map.corners[space.corner - 1] : null;
+		if (corner) {
+			if (player.cornerStops < corner.requiredStops) {
+				//try to make sure we get enough stops
+				var remainingStops = corner.requiredStops - player.cornerStops;
+				targetDistance = targetDistance / remainingStops;
+			} else {
+				targetDistance = space.cornerStartDistance; //aim for the next corner;
+			}
+		}
+		var targetGear = _pickGearForDistance(targetDistance);
 		targetGear = Math.min(player.activeGear + 1, Math.max(player.activeGear - 1, targetGear));
 		_gearSelect(targetGear, game.activePlayer);
 	}
-        
-        function _pickGearForDistance(distance) {
-            if (distance < 2)
-                return 1;
-            if (distance < 5)
-                return 2;
-            if (distance < 10)
-                return 3;
-            if (distance < 15)
-                return 4;
-            if (distance < 24)
-                return 5;
-            return 6;
-        }
+
+	function _pickGearForDistance(distance) {
+		if (distance < 2)
+			return 1;
+		if (distance < 5)
+			return 2;
+		if (distance < 10)
+			return 3;
+		if (distance < 15)
+			return 4;
+		if (distance < 24)
+			return 5;
+		return 6;
+	}
 
 	function _autoMoveSelect() {
 		var game = games.lookup(socket);
@@ -202,7 +207,7 @@ function playerSocket(socket, io, games) {
 					};
 				}
 				//Allows for animation time before moving on
-				setTimeout(nextFn, nextPlayerDelay);
+				autoMoveTimeouts[game.id] = setTimeout(nextFn, nextPlayerDelay);
 			}, delay);
 		}
 	}
@@ -226,7 +231,7 @@ function playerSocket(socket, io, games) {
 			if (nextPlayer.skipNext) {
 				nextPlayer.skipNext = false;
 				_sysMessage(game, nextPlayer.name + " had a slow pit stop - skipping this turn");
-				setTimeout(_nextPlayer, 1000); //give some time for people to read the message
+				autoMoveTimeouts[game.id] = setTimeout(_nextPlayer, 1000); //give some time for people to read the message
 			} else {
 				nextPlayer.gearSelected = false;
 				io.to(game.id).emit("updatePlayers", game.players);
@@ -317,7 +322,7 @@ function playerSocket(socket, io, games) {
 			var rand = Math.ceil(20 * Math.random());
 			if (rand === 1) {
 				player.firstRoll = 'poor';
-                player.activeGear = 0;
+				player.activeGear = 0;
 				_sysNotify(game, player.name + " had a poor start and will restart next turn.");
 				_nextPlayer();
 				return;
@@ -585,7 +590,7 @@ function playerSocket(socket, io, games) {
 
 	function _gameOver(game) {
 		var rankings = [];
-                var i;
+		var i;
 		for (i = 0; i < game.winners.length; i++) {
 			rankings.push({
 				place : i + 1,
@@ -603,10 +608,10 @@ function playerSocket(socket, io, games) {
 		io.to(game.id).emit("gameOver", {
 			rankings : rankings
 		});
+		games.gameOver(game);
 		game.running = false;
 		game.players = [];
 		game.activePlayer = null;
-		games.gameOver(game);
 	}
 
 	function _applyMoveDamage(game, player, move) {
@@ -766,13 +771,13 @@ function playerSocket(socket, io, games) {
 		}
 		_checkDamage(game, player);
 	}
-    
-    console.log("runtime initialized for socket "+socket.id);
+
+	console.log("runtime initialized for socket " + socket.id);
 
 	return function () {
 		var player = games.getPlayer(socket);
 		if (player) {
-            console.log("marking "+player.name+" as disconnected");
+			console.log("marking " + player.name + " as disconnected");
 			player.disconnected = true;
 		}
 	}

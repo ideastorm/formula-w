@@ -67,7 +67,7 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 			$scope.mapNames.sort();
 			$scope.mapName = 'Monaco';
 			$scope.cars = require('../../shared/cars');
-                        
+
 			$scope.damageMode = function () {
 				return $scope.advancedDamage ? "Advanced" : "Basic";
 			};
@@ -91,11 +91,14 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 						}
 					});
 			};
-                        
-                        $scope.addComputer = function() {
+
+			$scope.addComputer = function () {
 				if ($scope.hosting() && !$scope.isRunning())
-                            Messaging.send("addComputer",{gameId:Games.currentGame.id, playerId:player.guid()});
-                        };
+					Messaging.send("addComputer", {
+						gameId : Games.currentGame.id,
+						playerId : player.guid()
+					});
+			};
 
 			$scope.kick = function (otherPlayer) {
 				if ($scope.hosting() && !$scope.isRunning())
@@ -154,11 +157,14 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 				}
 			};
 
-			$scope.updateCars = function (car) {
-				Messaging.send("selectCar", car);
+			$scope.updateCars = function (car, userId) {
+				Messaging.send("selectCar", {
+					car : car,
+					userId : userId
+				});
 			};
-            
-   			$scope.recentMessages = [];
+
+			$scope.recentMessages = [];
 			$scope.sendChat = function () {
 
 				var message = $scope.chatMessage.trim();
@@ -219,8 +225,8 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 					$location.url('/');
 
 				$scope.$apply(function () {
-                                        $scope.lapCount = data.laps;
-                                        $scope.advancedDamage = data.advanced;
+					$scope.lapCount = data.laps;
+					$scope.advancedDamage = data.advanced;
 					$scope.game = Games.currentGame;
 					$scope.players = data.players;
 					$scope.map = data.map;

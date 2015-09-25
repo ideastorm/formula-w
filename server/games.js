@@ -62,21 +62,23 @@ function _bind(socket, io, players) {
 		}
 		_io.emit("gameList", _getList());
 	});
-        
-        socket.on('addComputer', function(message){
-            players.addAI(message.playerId);
-            _joinGame(message.gameId, message.playerId, null);
-            var game = _lookup(message.gameId);
-            if (game) {
-                var playerIndex = _findPlayerIndex(game, socket.userId);
-                if (playerIndex >= 0) {
-                    _playerGames[message.playerId] = message.gameId;
-                    game.players[playerIndex].ready = 'Ready';
-                    game.players[playerIndex].isAi = true;
-                    game.players[playerIndex].disconnected = true;                
-                }
-            }
-        });
+
+	socket.on('addComputer', function (message) {
+		players.addAI(message.playerId);
+		_joinGame(message.gameId, message.playerId, null);
+		var game = _lookup(socket);
+		if (game) {
+			console.log(game);
+			var playerIndex = _findPlayerIndex(game, message.playerId);
+			if (playerIndex >= 0) {
+				_playerGames[message.playerId] = message.gameId;
+				game.players[playerIndex].ready = 'Ready';
+				game.players[playerIndex].isAi = true;
+				game.players[playerIndex].disconnected = true;
+				_io.to(game.id).emit('currentGame', game);
+			}
+		}
+	});
 
 	socket.on('join', function (gameId) {
 		if (socket.userId) {
@@ -136,11 +138,12 @@ function _bind(socket, io, players) {
 				game.map = deepCopy(_maps[game.mapName]);
 				game.winners = [];
 				game.dangerSpaces = [];
+                game.host = socket.userId;
 				_finalizeMap(game.map);
 				_randomizePlayers(game);
 				_assignStartSpaces(game);
-				game.activePlayer = game.playerOrder.shift();
 				_initializeDamage(game);
+                console.log("----------------------------------------- Starting game -----------------------------------------")
 				_io.to(game.id).emit("currentGame", game);
 				_io.to(game.id).emit('startGame');
 			}
@@ -151,15 +154,16 @@ function _bind(socket, io, players) {
 		if (socket.userId && _playerGames[socket.userId]) {
 			var game = _findGame(_playerGames[socket.userId]);
 			if (game) {
-				var playerIndex = _findPlayerIndex(game, socket.userId);
+				var playerIndex = _findPlayerIndex(game, data.userId);
 				if (playerIndex >= 0) {
+					var car = data.car;
 					var player = game.players[playerIndex];
 					var message = {
-						removed : data
+						removed : car
 					};
 					if (player.car)
 						message.added = player.car;
-					player.car = data;
+					player.car = car;
 					_io.to(game.id).emit('updateCars', message);
 					_io.to(game.id).emit('currentGame', game);
 				}
@@ -267,6 +271,20 @@ function _gameOver(game) {
 		_games.splice(gameIndex, 1);
 	}
 	_io.emit('gameList', _games);
+
+	for (var i = 0; i < game.players.length; i++) {
+		var player = game.players[i];
+		if (player.isAi) {
+			_players.removeAI(player.id);
+		}
+	}
+}
+
+function _onlyAisLeft(game) {
+	for (var i = 0; i < game.players.length; i++)
+		if (!game.players[i].isAi)
+			return false;
+	return true;
 }
 
 function _removeFromGame(gameId, userId) {
@@ -275,12 +293,18 @@ function _removeFromGame(gameId, userId) {
 		var game = _games[gameIndex];
 		if (!game.running) {
 			var index = _findPlayerIndex(game, userId);
-			if (index >= 0)
+			if (index >= 0) {
+				var player = game.players[index];
 				game.players.splice(index, 1);
-			if (!game.players.length)
-				_games.splice(gameIndex, 1);
-			_io.to(gameId).emit('currentGame', game);
-			_io.emit('gameList', _games);
+				if (player.isAi)
+					players.removeAI(player.id);
+			}
+			console.log(game);
+			if (_onlyAisLeft(game)) {
+				_gameOver(game);
+			} else {
+				_io.to(gameId).emit('currentGame', game);
+			}
 		}
 	}
 }
@@ -289,14 +313,21 @@ function _banFromGame(gameId, userId) {
 	var gameIndex = _findGameIndex(gameId);
 	if (gameIndex !== null) {
 		var game = _games[gameIndex];
-		game.banned.push(userId);
-		var index = _findPlayerIndex(game, userId);
-		if (index >= 0)
-			game.players.splice(index, 1);
-		if (!game.players.length)
-			_games.splice(gameIndex, 1);
-		_io.to(gameId).emit('currentGame', game);
-		_io.emit('gameList', _games);
+		if (!game.running) {
+			game.banned.push(userId);
+			var index = _findPlayerIndex(game, userId);
+			if (index >= 0) {
+				var player = game.players[index];
+				game.players.splice(index, 1);
+				if (player.isAi)
+					players.removeAI(player.id);
+			}
+			if (_onlyAisLeft(game)) {
+				_gameOver(game);
+			} else {
+				_io.to(gameId).emit('currentGame', game);
+			}
+		}
 	}
 }
 
@@ -324,7 +355,6 @@ function _randomizePlayers(game) {
 function _assignStartSpaces(game) {
 	var i;
 	if (game.map) {
-		console.log(game.playerOrder);
 		for (i = 0; i < game.playerOrder.length; i++) {
 			var player = game.players[game.playerOrder[i]];
 			player.location = game.map.startSpaces[i];
@@ -346,6 +376,7 @@ function _assignStartSpaces(game) {
 				break;
 			}
 		}
+		game.playerOrder = [];
 	}
 }
 
@@ -369,10 +400,10 @@ function _initializeDamage(game) {
 }
 
 function _finalizeMap(map) {
-        var cornerProcessingQueue = [];
+	var cornerProcessingQueue = [];
 	for (var i = 0; i < map.spaces.length; i++) {
 		var space = map.spaces[i];
-                cornerProcessingQueue.push(space);
+		cornerProcessingQueue.push(space);
 		space.inside = null;
 		space.outside = null;
 		space.forward = null;
@@ -417,31 +448,31 @@ function _finalizeMap(map) {
 		}
 	}
 
-        processCornerDistances();
+	processCornerDistances();
 
-        function processCornerDistances() {
-            console.log("finding distances to next corner transition");
-            while (cornerProcessingQueue.length) {
-                var space = cornerProcessingQueue.shift();
-                findCornerDistance(space);
-                if (!space.cornerStartDistance || !space.cornerEndDistance)
-                    cornerProcessingQueue.push(space);
-            }
-            console.log("done");
-        }
-    
-        function findCornerDistance(space) {
-            var fwdSpace = map.spaces[space.forward];
-            if (space.corner && !fwdSpace.corner) {
-                space.cornerEndDistance = 1;
-            } else if (!space.corner && fwdSpace.corner) {
-                space.cornerStartDistance = 1;
-            } 
-            if (!space.cornerStartDistance && typeof fwdSpace.cornerStartDistance === 'number')
-                space.cornerStartDistance = fwdSpace.cornerStartDistance+1;
-            if (!space.cornerEndDistance && typeof fwdSpace.cornerEndDistance === 'number')
-                space.cornerEndDistance = fwdSpace.cornerEndDistance+1;
-        }
+	function processCornerDistances() {
+		console.log("finding distances to next corner transition");
+		while (cornerProcessingQueue.length) {
+			var space = cornerProcessingQueue.shift();
+			findCornerDistance(space);
+			if (!space.cornerStartDistance || !space.cornerEndDistance)
+				cornerProcessingQueue.push(space);
+		}
+		console.log("done");
+	}
+
+	function findCornerDistance(space) {
+		var fwdSpace = map.spaces[space.forward];
+		if (space.corner && !fwdSpace.corner) {
+			space.cornerEndDistance = 1;
+		} else if (!space.corner && fwdSpace.corner) {
+			space.cornerStartDistance = 1;
+		}
+		if (!space.cornerStartDistance && typeof fwdSpace.cornerStartDistance === 'number')
+			space.cornerStartDistance = fwdSpace.cornerStartDistance + 1;
+		if (!space.cornerEndDistance && typeof fwdSpace.cornerEndDistance === 'number')
+			space.cornerEndDistance = fwdSpace.cornerEndDistance + 1;
+	}
 
 	function _isInner(spaceIndex) {
 		return map.insideCorridors.indexOf(spaceIndex) >= 0;

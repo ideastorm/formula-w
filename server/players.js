@@ -59,7 +59,7 @@ function _lookup(userId) {
 	return _byId[userId];
 }
 
-var _aiNames = ['XC-A','DriveBot','WishIWasGooGLe','Bowser','Kirby','Galatea','Ferdinand','Tipsy7k','Harley','Quinto'];
+var _aiNames = ['XC-A','DriveBot','Bowser','Kirby','Galatea','Ferdy','Tipsy7k','Harley','Quinto'];
 
 function _addAI(userId) {
     var randomInt = Math.ceil(Math.random()*100);
