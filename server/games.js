@@ -62,6 +62,21 @@ function _bind(socket, io, players) {
 		}
 		_io.emit("gameList", _getList());
 	});
+        
+        socket.on('addComputer', function(message){
+            players.addAI(message.playerId);
+            _joinGame(message.gameId, message.playerId, null);
+            var game = _lookup(message.gameId);
+            if (game) {
+                var playerIndex = _findPlayerIndex(game, socket.userId);
+                if (playerIndex >= 0) {
+                    _playerGames[message.playerId] = message.gameId;
+                    game.players[playerIndex].ready = 'Ready';
+                    game.players[playerIndex].isAi = true;
+                    game.players[playerIndex].disconnected = true;                
+                }
+            }
+        });
 
 	socket.on('join', function (gameId) {
 		if (socket.userId) {

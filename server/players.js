@@ -18,6 +18,8 @@
 
 module.exports.bind = _bind;
 module.exports.lookup = _lookup;
+module.exports.addAI = _addAI;
+module.exports.removeAI = _removeAI;
 
 var _users = {};
 var _byId = {};
@@ -55,4 +57,20 @@ function _quit(user, userId) {
 
 function _lookup(userId) {
 	return _byId[userId];
+}
+
+var _aiNames = ['XC-A','DriveBot','WishIWasGooGLe','Bowser','Kirby','Galatea','Ferdinand','Tipsy7k','Harley','Quinto'];
+
+function _addAI(userId) {
+    var randomInt = Math.ceil(Math.random()*100);
+    var name;
+    do {
+        var index = Math.floor(Math.random()*_aiNames.length);
+        name = _aiNames[index]+"-"+randomInt;
+    } while (!_checkUser(name, userId).valid);
+}
+
+function _removeAI(userId) {
+    var user = _lookup(userId);
+    _quit(user, userId);
 }

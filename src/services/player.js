@@ -22,7 +22,8 @@ angular.module('FormulaW').factory('player', ['$cookies', 'Messaging', '$rootSco
 			userId: null,
 			valid: false,
 			findUser: _findUser,
-			toggleReady: _toggleReady
+			toggleReady: _toggleReady,
+                        guid: _guid
 		};
 
 		service.userId = $cookies.get('userId');

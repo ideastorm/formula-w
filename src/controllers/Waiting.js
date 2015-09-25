@@ -67,7 +67,7 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 			$scope.mapNames.sort();
 			$scope.mapName = 'Monaco';
 			$scope.cars = require('../../shared/cars');
-
+                        
 			$scope.damageMode = function () {
 				return $scope.advancedDamage ? "Advanced" : "Basic";
 			};
@@ -91,6 +91,11 @@ angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$route
 						}
 					});
 			};
+                        
+                        $scope.addComputer = function() {
+				if ($scope.hosting() && !$scope.isRunning())
+                            Messaging.send("addComputer",{gameId:Games.currentGame.id, playerId:player.guid()});
+                        };
 
 			$scope.kick = function (otherPlayer) {
 				if ($scope.hosting() && !$scope.isRunning())
