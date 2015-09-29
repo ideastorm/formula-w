@@ -25,15 +25,20 @@ angular.module('FormulaW').factory("notifications", [function () {
 
 			var service = {
 				notify : _notify,
+                close: _closeLast,
 				requestNotification : _request
 			};
 
 			return service;
+            
+            function _closeLast() {
+					if (lastNotification && typeof lastNotification.close === 'function')
+						lastNotification.close();
+            }
 
 			function _notify(title, message) {
 				if (enable) {
-					if (lastNotification && typeof lastNotification.close === 'function')
-						lastNotification.close();
+                    _closeLast();
 					lastNotification = new Notification(title, {
 							icon : "markers/0.png",
 							body : message

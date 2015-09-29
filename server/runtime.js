@@ -56,8 +56,8 @@ function playerSocket(socket, io, games) {
 		var game = games.lookup(socket);
 		if (player.disconnected) {
 			console.log(player.name + " is disconnected; reducing auto play delays");
-			delay /= 15;
-			warnDelay /= 15;
+			delay = 500;
+			warnDelay = 500;
 		}
 		clearTimeout(autoMoveTimeouts[game.id]);
 		function _warnPlayer() {
@@ -109,10 +109,17 @@ function playerSocket(socket, io, games) {
 			return;
 		var player = game.players[game.activePlayer];
 		var moves = player.moveOptions;
+        if (!moves || !moves.length) {
+            console.log("no move options, waiting");
+            setTimeout(_autoMoveSelect,10);
+            return;
+        }
 		var best = 100;
-		var bestIndex = null;
+		var bestIndex = moves.length-1;
 		for (var i = moves.length - 1; i >= 0; i--) {
 			var move = moves[i];
+            if (move.destroy)
+                continue;
 			if (move.totalDamage < best) {
 				best = move.totalDamage;
 				bestIndex = i;
@@ -343,6 +350,8 @@ function playerSocket(socket, io, games) {
 			extraMessage = " and took 1 engine damage.  This space is now dangerous!";
 		}
 		_sysMessage(game, player.name + " rolled " + movePoints + extraMessage);
+        if (player.location < 0)
+            _nextPlayer();
 		var availableSpaces = [];
 		var workQueue = [{
 				space : player.location,
@@ -351,7 +360,7 @@ function playerSocket(socket, io, games) {
 				swerve : 0,
 				allowIn : player.allowIn,
 				allowOut : player.allowOut,
-				corner : player.currentCorner,
+				corner : player.corner,
 				cornerStops : player.cornerStops,
 				cornerDamage : 0,
 				addCornerDamage : 0,
@@ -457,8 +466,8 @@ function playerSocket(socket, io, games) {
 					nextEntry.brakeDamage = 0;
 					nextEntry.tireDamage = 0;
 					if (!game.advanced) {
-						nextEntry.totalDamage = Math.ceil((player.damage - 20) / 2); //should give a negative number so we actually repair
-						nextEntry.damageMsg = "Pit Stop: Half of all damage repaired!";
+                        nextEntry.totalDamage = Math.max(player.damage - 20, -10); //should give a negative number so we actually repair
+						nextEntry.damageMsg = "Pit Stop: "+(-nextEntry.totalDamage)+" damage repaired!";
 					} else {
 						nextEntry.tireDamage = player.damage.tires - 10;
 						nextEntry.totalDamage += nextEntry.tireDamage;

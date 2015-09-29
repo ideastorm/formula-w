@@ -232,7 +232,9 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					if ($scope.myTurn) {
 						_notify("Your Turn!");
 						notifications.notify("Formula W", "It' s your turn ");
-					}
+					} else {
+                        notifications.close();
+                    }
 					_scrollToActivePlayer();
 				}
 			}
@@ -307,12 +309,40 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 							if (player.location === location) {
 								player.spinout = true;
 							}
+                            _smoothScroll(player.location, location, 2000/speed);
 							player.location = location;
 							setTimeout(_nextSpace, 2000 / speed);
 						}
 					});
 				}
 			});
+            
+            function _smoothScroll(oldLocation, newLocation, time) {
+                var xOffset = gameView.clientWidth / 2;
+                var yOffset = gameView.clientHeight / 2;
+                
+                function scrollOp(left, top) {
+                    return function(){
+                        gameView.scrollLeft = left - xOffset;
+                        gameView.scrollTop = top - yOffset;
+                    };
+                }
+                
+                var steps = Math.floor(time / 10);                
+                var oldLocation = game.map.spaces[oldLocation];
+				var location = game.map.spaces[newLocation];
+				
+                var xDiff = location.x - oldLocation.x;
+                var yDiff = location.y - oldLocation.y;
+                var xStep = xDiff / steps;
+                var yStep = yDiff / steps;
+                for (var step = 1; step <= steps; step++) {
+                    var x = oldLocation.x + xStep * step;
+                    var y = oldLocation.y + yStep * step;
+                    setTimeout(scrollOp(x, y), 10*step);
+                }
+                setTimeout(scrollOp(location.x, location.y),time);
+            }
 
 			function _scrollTo(locationIndex) {
 				var location = game.map.spaces[locationIndex];

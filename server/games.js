@@ -359,7 +359,7 @@ function _assignStartSpaces(game) {
 			var player = game.players[game.playerOrder[i]];
 			player.location = game.map.startSpaces[i];
 			player.lap = 0;
-			player.currentCorner = null;
+			player.corner = null;
 			player.cornerStops = 0;
 			switch (game.map.spaces[player.location].corridor) {
 			case -1:
