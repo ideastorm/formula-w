@@ -237,7 +237,8 @@ function playerSocket(socket, io, games) {
 			var nextPlayer = game.players[game.activePlayer];
 			if (nextPlayer.skipNext) {
 				nextPlayer.skipNext = false;
-				_sysMessage(game, nextPlayer.name + " had a slow pit stop - skipping this turn");
+				_sysNotify(game, nextPlayer.name + " had a slow pit stop - skipping this turn");
+				_sysNotify(game, nextPlayer.name + " had a slow pit stop - skipping this turn");
 				autoMoveTimeouts[game.id] = setTimeout(_nextPlayer, 1000); //give some time for people to read the message
 			} else {
 				nextPlayer.gearSelected = false;
@@ -582,9 +583,12 @@ function playerSocket(socket, io, games) {
 		var sortedLocations = [];
 		for (var i = 0; i < players.length; i++) {
 			var player = players[i];
-			locations.push(player.lap * spaces + player.location);
+            var cumulativeLocation = player.lap * spaces + player.location;
+            if (player.destroyed)
+                cumulativeLocation *=-1;
+			locations.push(cumulativeLocation);
 			if (!player.destroyed)
-				sortedLocations.push(player.lap * spaces + player.location);
+				sortedLocations.push(cumulativeLocation);
 		}
 		console.log(locations);
 		sortedLocations.sort(function (a, b) {
