@@ -248,7 +248,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				$scope.gearSelected = true;
 				$scope.moveOptions = moveOptions;
 			}
-
+            
 			function _processPlayerUpdate(players) {
 				game.players = players;
 				$scope.players = players;

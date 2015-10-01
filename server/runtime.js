@@ -200,10 +200,10 @@ function playerSocket(socket, io, games) {
 
 				if (player.lap > game.laps) {
 					game.winners.push(playerIndex);
-					player.destroyed = true;
+					player.finished = true;
 				}
 				var nextPlayerDelay = 1;
-				if (player.destroyed) {
+				if (player.destroyed || player.finished) {
 					player.location = -1;
 					nextPlayerDelay = 500;
 				}
@@ -225,6 +225,8 @@ function playerSocket(socket, io, games) {
 			return;
 		if (!game.running)
 			return;
+        
+        _updateLeaders(game);
 
 		if (!game.playerOrder.length) {
 			console.log("Recycling player list");
@@ -570,24 +572,54 @@ function playerSocket(socket, io, games) {
 	function _remainingPlayers(game) {
 		var players = [];
 		for (var i = 0; i < game.players.length; i++) {
-			if (!game.players[i].destroyed)
-				players.push(game.players[i]);
+            var player = game.players[i];
+			if (!player.destroyed && !player.finished)
+				players.push(player);
 		}
 		return players;
 	}
+    
+    function _updateLeaders(game) {
+		var players = game.players;
+		var spaces = game.map.spaces.length;
+        var placeOrder = deepCopy(game.winners);
+		var locations = []; //all players, including destroyed & finished
+		var sortedLocations = [];
+		for (var i = 0; i < players.length; i++) {
+			var player = players[i];
+            player.place = 'DNF';
+            var cumulativeLocation = player.lap * spaces + player.location;
+            if (player.destroyed || player.finished)
+                cumulativeLocation *=-1;
+			locations.push(cumulativeLocation);
+			if (!player.destroyed || player.finished)
+				sortedLocations.push(cumulativeLocation);
+		}
+		console.log(locations);
+		sortedLocations.sort(function (a, b) {
+			return a - b
+		});
+        var i;
+		for (i = sortedLocations.length - 1; i >= 0; i--) {
+			placeOrder.push(locations.indexOf(sortedLocations[i]));
+		}
+        for (i = 0; i < placeOrder.length; i++) {
+            players[placeOrder[i]].place = i+1;
+        }
+    }
 
 	function _sortPlayers(game) {
 		var players = game.players;
 		var spaces = game.map.spaces.length;
-		var locations = []; //all players, including destroyed
+		var locations = []; //all players, including destroyed &
 		var sortedLocations = [];
 		for (var i = 0; i < players.length; i++) {
 			var player = players[i];
             var cumulativeLocation = player.lap * spaces + player.location;
-            if (player.destroyed)
+            if (player.destroyed || player.finished)
                 cumulativeLocation *=-1;
 			locations.push(cumulativeLocation);
-			if (!player.destroyed)
+			if (!player.destroyed || player.finished)
 				sortedLocations.push(cumulativeLocation);
 		}
 		console.log(locations);

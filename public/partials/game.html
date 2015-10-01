@@ -54,12 +54,14 @@ limitations under the License.
         <h4>Players</h4>
         <table>
 			<tr>
-				<th>Player</th>
+            <th>Place</th>
+				<th>Player</th>                
 				<th>Car</th>
 				<th>Lap</th>
 				<th>Health</th>
 			</tr>
-            <tr ng-repeat="player in players">
+            <tr ng-repeat="player in players | orderBy:'place' track by $index">
+            <td>{{player.place}}</td>
                 <td>{{player.name}}</td>
                 <td>
                     <div style="position:relative;width:32px">
