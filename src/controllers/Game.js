@@ -105,7 +105,7 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
                 $scope.litPath = null;
                 return;
             }
-            $scope.litPath = moveOption.path;
+            $scope.litPath = moveOption.path;            
             console.log(moveOption.path)
         }
 

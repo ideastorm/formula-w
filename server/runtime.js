@@ -55,16 +55,16 @@ function playerSocket(socket, io, games) {
     function _setWarning(player, message, action, delay, warnDelay) {
         var game = games.lookup(socket);
         if (player.disconnected) {
-            console.log(player.name + " is disconnected; reducing auto play delays");
+//            console.log(player.name + " is disconnected; reducing auto play delays");
             delay = 500;
-            warnDelay = 500;
+            warnDelay = 50;
         }
         clearTimeout(autoMoveTimeouts[game.id]);
-        function _warnPlayer() {
+
+        autoMoveTimeouts[game.id] = setTimeout(function () {
             autoMoveTimeouts[game.id] = setTimeout(action, delay);
             io.to(io.users[player.id]).emit("sysWarning", message);
-        }
-        autoMoveTimeouts[game.id] = setTimeout(_warnPlayer, warnDelay);
+        }, warnDelay);
     }
 
     function _autoGearSelect() {
@@ -111,7 +111,7 @@ function playerSocket(socket, io, games) {
         var moves = player.moveOptions;
         if (!moves || !moves.length) {
             console.log("no move options, waiting");
-            setTimeout(_autoGearSelect, 10);
+            setTimeout(_autoMoveSelect, 10);
             return;
         }
         var best = 100;
@@ -131,11 +131,11 @@ function playerSocket(socket, io, games) {
 
     function _gearSelect(selectedGear, forcePlayer) {
         var game = games.lookup(socket);
-        clearTimeout(autoMoveTimeouts[game.id]);
         var playerIndex = games.getPlayerIndex(game, socket.userId);
         if (typeof forcePlayer === 'number')
             playerIndex = forcePlayer;
         if (playerIndex === game.activePlayer) {
+            clearTimeout(autoMoveTimeouts[game.id]);
             var player = game.players[playerIndex];
             if (!player.gearSelected) {
                 _validateAndUpdateGearSelection(game, player, +selectedGear);
@@ -156,11 +156,11 @@ function playerSocket(socket, io, games) {
 
     function _selectMove(selectedMove, forcePlayer) {
         var game = games.lookup(socket);
-        clearTimeout(autoMoveTimeouts[game.id]);
         var playerIndex = games.getPlayerIndex(game, socket.userId);
         if (typeof forcePlayer === 'number')
             playerIndex = forcePlayer;
         if (playerIndex === game.activePlayer) {
+            clearTimeout(autoMoveTimeouts[game.id]);
             var player = game.players[playerIndex];
             var move = player.moveOptions[selectedMove];
             if (move.space < player.location) {
@@ -228,6 +228,7 @@ function playerSocket(socket, io, games) {
             return;
         if (!game.running)
             return;
+        clearTimeout(autoMoveTimeouts[game.id]);
 
         _updateLeaders(game);
 
@@ -242,7 +243,6 @@ function playerSocket(socket, io, games) {
             var nextPlayer = game.players[game.activePlayer];
             if (nextPlayer.skipNext) {
                 nextPlayer.skipNext = false;
-                _sysNotify(game, nextPlayer.name + " had a slow pit stop - skipping this turn");
                 _sysNotify(game, nextPlayer.name + " had a slow pit stop - skipping this turn");
                 autoMoveTimeouts[game.id] = setTimeout(_nextPlayer, 1000); //give some time for people to read the message
             } else {
@@ -357,7 +357,11 @@ function playerSocket(socket, io, games) {
         }
         _sysMessage(game, player.name + " rolled " + movePoints + extraMessage);
         if (player.location < 0)
+        { //taking damage can take the player out of the game.
+            _sysMessage(game, "skipping " + player.name);
             _nextPlayer();
+            return;
+        }
         var availableSpaces = [];
         var workQueue = [{
                 space: player.location,
@@ -424,6 +428,9 @@ function playerSocket(socket, io, games) {
                 player.moveOptions = availableSpaces;
 
                 io.to(game.id).emit("updatePlayers", game.players);
+                if (availableSpaces.length < 1) {
+                    autoMoveTimeouts[game.id] = setTimeout(_nextPlayer, 1000); 
+                }
             }
 
             function _pushOption(spaceIndex, isSwerve) {
@@ -600,7 +607,7 @@ function playerSocket(socket, io, games) {
         }
         console.log(locations);
         sortedLocations.sort(function (a, b) {
-            return a - b
+            return a - b;
         });
         var i;
         for (i = sortedLocations.length - 1; i >= 0; i--) {
@@ -627,7 +634,7 @@ function playerSocket(socket, io, games) {
         }
         console.log(locations);
         sortedLocations.sort(function (a, b) {
-            return a - b
+            return a - b;
         });
         console.log(sortedLocations);
         for (var i = sortedLocations.length - 1; i >= 0; i--) {
@@ -828,5 +835,5 @@ function playerSocket(socket, io, games) {
             console.log("marking " + player.name + " as disconnected");
             player.disconnected = true;
         }
-    }
+    };
 }
