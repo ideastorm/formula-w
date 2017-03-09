@@ -32,11 +32,15 @@ limitations under the License.
                  ng-src="markers/{{damageIndex(moveOption)}}.png"
                  ng-click="selectMoveOption($index)"
                  ng-style="buildIconStyle(moveOption)"
+                 ng-mouseenter="highlightPath(moveOption)"
+                 ng-mouseleave="highlightPath(null)"
                  ng-attr-title="{{damageMessage(moveOption)}}">
             <img ng-repeat="moveOption in opponentMoves"
                  class="fw-game-icon"
                  ng-src="markers/{{damageIndex(moveOption)}}.png"
                  ng-style="buildIconStyle(moveOption)"
+                 ng-mouseenter="highlightPath(moveOption)"
+                 ng-mouseleave="highlightPath(null)"
                  ng-attr-title="{{damageMessage(moveOption)}}">
             <img ng-if="explosion" class="fw-game-icon"
                  src="markers/explosion.gif"

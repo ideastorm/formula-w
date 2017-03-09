@@ -1,0 +1,3 @@
+Known bugs:
+Rolling a 20/30 with 1 remaining health crashes the server
+Slow starts generate no moves, but the code expects moves to be available - so you're stuck until the auto move timeout.
