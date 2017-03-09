@@ -290,6 +290,9 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 				var player = game.players[playerIndex];
 				player.lastMove = path;
 				var speed = path.length;
+                                if (game.fastMovement) {
+                                    speed *=10;
+                                }
 				player.speed = speed;
 
 				$scope.$apply(function () {

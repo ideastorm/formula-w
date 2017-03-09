@@ -37,7 +37,7 @@ angular.module('FormulaW').factory("Messaging", ['$location', function ($locatio
 			}
 
 			function _send(event, message) {
-				console.log("sending " + message + " to " + event);
+				console.log("sending " + JSON.stringify(message) + " to " + event);
 				_socket.emit(event, message);
 			}
 		}

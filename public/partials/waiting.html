@@ -29,10 +29,13 @@ limitations under the License.
             <select ng-model="lapCount" ng-options="opt.count as opt.count for opt in lapOptions" ng-change="updateLaps()"></select><br>
             <label>Advanced Damage</label>
             <input type="checkbox" ng-model="advancedDamage" ng-change="updateDamage()">
+            <label>Fast Movement</label>
+            <input type="checkbox" ng-model="fastMovement" ng-change="updateMovement()">
         </div>
         <div ng-show="!hosting()">
             Laps: {{lapCount}}<br/>
             Damage mode: {{damageMode()}}
+            Fast movement: {{fastMotion()}}
         </div>
 	</div>
 	<div class="fw-div">

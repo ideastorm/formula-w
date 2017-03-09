@@ -17,250 +17,267 @@
 'use strict';
 
 angular.module('FormulaW').filter('prettifyFileName', function () {
-	function prettifyFileName(input) {
-		input = input.replace('.png', '');
-		var result = '';
-		var lastChar = ' ';
-		for (var i = 0; i < input.length; i++) {
-			var char = input.charAt(i);
-			if (char === '_')
-				char = ' ';
-			if (lastChar === ' ')
-				char = char.toUpperCase();
-			result += char;
-			lastChar = char;
-		}
+    function prettifyFileName(input) {
+        input = input.replace('.png', '');
+        var result = '';
+        var lastChar = ' ';
+        for (var i = 0; i < input.length; i++) {
+            var char = input.charAt(i);
+            if (char === '_')
+                char = ' ';
+            if (lastChar === ' ')
+                char = char.toUpperCase();
+            result += char;
+            lastChar = char;
+        }
 
-		return result;
-	}
-	return prettifyFileName;
+        return result;
+    }
+    return prettifyFileName;
 });
 angular.module('FormulaW').controller('Waiting', ['$scope', '$location', '$routeParams', 'Messaging', 'Games', 'player', function ($scope, $location, $routeParams, Messaging, Games, player) {
-			$scope.player = player;
-			$scope.lapCount = 2;
-			$scope.lapOptions = [{
-					count : 1
-				}, {
-					count : 2
-				}, {
-					count : 3
-				}, {
-					count : 4
-				}, {
-					count : 5
-				}, {
-					count : 6
-				}, {
-					count : 7
-				}, {
-					count : 8
-				}, {
-					count : 9
-				}, {
-					count : 10
-				}
-			];
-			$scope.starting = false;
-			$scope.mapNames = [];
-			for (var mapName in require('../../shared/maps'))
-				$scope.mapNames.push(mapName);
-			$scope.mapNames.sort();
-			$scope.mapName = 'Monaco';
-			$scope.cars = require('../../shared/cars');
+        $scope.player = player;
+        $scope.lapCount = 2;
+        $scope.lapOptions = [{
+                count: 1
+            }, {
+                count: 2
+            }, {
+                count: 3
+            }, {
+                count: 4
+            }, {
+                count: 5
+            }, {
+                count: 6
+            }, {
+                count: 7
+            }, {
+                count: 8
+            }, {
+                count: 9
+            }, {
+                count: 10
+            }
+        ];
+        $scope.starting = false;
+        $scope.mapNames = [];
+        for (var mapName in require('../../shared/maps'))
+            $scope.mapNames.push(mapName);
+        $scope.mapNames.sort();
+        $scope.mapName = 'Monaco';
+        $scope.cars = require('../../shared/cars');
 
-			$scope.damageMode = function () {
-				return $scope.advancedDamage ? "Advanced" : "Basic";
-			};
+        $scope.damageMode = function () {
+            return $scope.advancedDamage ? "Advanced" : "Basic";
+        };
 
-			$scope.updateMap = function () {};
-			$scope.updateLaps = function () {
-				if ($scope.hosting() && !$scope.isRunning())
-					Messaging.send("updateGame", {
-						gameId : Games.currentGame.id,
-						settings : {
-							laps : $scope.lapCount
-						}
-					});
-			};
-			$scope.updateDamage = function () {
-				if ($scope.hosting() && !$scope.isRunning())
-					Messaging.send("updateGame", {
-						gameId : Games.currentGame.id,
-						settings : {
-							advanced : ($scope.advancedDamage ? true : false)
-						}
-					});
-			};
+        $scope.fastMotion = function () {
+            return $scope.fastMovement ? "Yes" : "No";
+        };
 
-			$scope.addComputer = function () {
-				if ($scope.hosting() && !$scope.isRunning())
-					Messaging.send("addComputer", {
-						gameId : Games.currentGame.id,
-						playerId : player.guid()
-					});
-			};
+        $scope.updateMap = function () {};
+        $scope.updateLaps = function () {
+            if ($scope.hosting() && !$scope.isRunning())
+                Messaging.send("updateGame", {
+                    gameId: Games.currentGame.id,
+                    settings: {
+                        laps: $scope.lapCount
+                    }
+                });
+        };
+        $scope.updateDamage = function () {
+            if ($scope.hosting() && !$scope.isRunning())
+                Messaging.send("updateGame", {
+                    gameId: Games.currentGame.id,
+                    settings: {
+                        advanced: ($scope.advancedDamage ? true : false)
+                    }
+                });
+        };
+        $scope.updateMovement = function () {
+            if ($scope.hosting() && !$scope.isRunning())
+                Messaging.send("updateGame", {
+                    gameId: Games.currentGame.id,
+                    settings: {
+                        fastMovement: ($scope.fastMovement ? true : false)
+                    }
+                });
+        };
 
-			$scope.kick = function (otherPlayer) {
-				if ($scope.hosting() && !$scope.isRunning())
-					Messaging.send("kick", {
-						gameId : Games.currentGame.id,
-						userId : otherPlayer.id
-					});
-			};
+        $scope.addComputer = function () {
+            if ($scope.hosting() && !$scope.isRunning())
+                Messaging.send("addComputer", {
+                    gameId: Games.currentGame.id,
+                    playerId: player.guid()
+                });
+        };
 
-			$scope.ban = function (otherPlayer) {
-				if ($scope.hosting() && !$scope.isRunning())
-					Messaging.send("ban", {
-						gameId : Games.currentGame.id,
-						userId : otherPlayer.id
-					});
-			};
+        $scope.kick = function (otherPlayer) {
+            if ($scope.hosting() && !$scope.isRunning())
+                Messaging.send("kick", {
+                    gameId: Games.currentGame.id,
+                    userId: otherPlayer.id
+                });
+        };
 
-			$scope.isMe = function (user) {
-				return user.id === player.userId;
-			};
+        $scope.ban = function (otherPlayer) {
+            if ($scope.hosting() && !$scope.isRunning())
+                Messaging.send("ban", {
+                    gameId: Games.currentGame.id,
+                    userId: otherPlayer.id
+                });
+        };
 
-			$scope.isRunning = function () {
-				return $scope.game.running;
-			}
+        $scope.isMe = function (user) {
+            return user.id === player.userId;
+        };
 
-			$scope.hosting = function () {
-				return $scope.players
-				 && $scope.players[0]
-				 && $scope.players[0].id === player.userId;
-			};
+        $scope.isRunning = function () {
+            return $scope.game.running;
+        }
 
-			$scope.inGame = function () {
-				if ($scope.players) {
-					for (var i = 0; i < $scope.players.length; i++) {
-						if ($scope.players[i].id === player.userId)
-							return true;
-					}
-				}
-				return false;
-			};
+        $scope.hosting = function () {
+            return $scope.players
+                    && $scope.players[0]
+                    && $scope.players[0].id === player.userId;
+        };
 
-			$scope.playersReady = function () {
-				if ($scope.players && $scope.players.length) {
-					for (var i = 0; i < $scope.players.length; i++) {
-						if ($scope.players[i].ready === "Not Ready")
-							return false;
-					}
-					return true;
-				}
-				return false;
-			};
+        $scope.inGame = function () {
+            if ($scope.players) {
+                for (var i = 0; i < $scope.players.length; i++) {
+                    if ($scope.players[i].id === player.userId)
+                        return true;
+                }
+            }
+            return false;
+        };
 
-			$scope.start = function () {
-				if ($scope.hosting() && $scope.playersReady()) {
-					Messaging.send("startGame");
-				}
-			};
+        $scope.playersReady = function () {
+            if ($scope.players && $scope.players.length) {
+                for (var i = 0; i < $scope.players.length; i++) {
+                    if ($scope.players[i].ready === "Not Ready")
+                        return false;
+                }
+                return true;
+            }
+            return false;
+        };
 
-			$scope.updateCars = function (car, userId) {
-				Messaging.send("selectCar", {
-					car : car,
-					userId : userId
-				});
-			};
+        $scope.start = function () {
+            if ($scope.hosting() && $scope.playersReady()) {
+                Messaging.send("startGame");
+            }
+        };
 
-			$scope.recentMessages = [];
-			$scope.sendChat = function () {
+        $scope.updateCars = function (car, userId) {
+            if (car) {
+                Messaging.send("selectCar", {
+                    car: car,
+                    userId: userId
+                });
+            }
+        };
 
-				var message = $scope.chatMessage.trim();
-				if (message) {
-					Messaging.send("chatMessage", message);
-					$scope.chatMessage = '';
-				}
-				return false;
-			};
+        $scope.recentMessages = [];
+        $scope.sendChat = function () {
 
-			function _processMessage(message, collection, container) {
-				var chatBox = document.getElementById(container);
-				collection.push(message);
-				if (collection.length > 30)
-					collection.shift();
-				setTimeout(function () {
-					chatBox.scrollTop = chatBox.scrollHeight;
-				}, 1);
-			}
+            var message = $scope.chatMessage.trim();
+            if (message) {
+                Messaging.send("chatMessage", message);
+                $scope.chatMessage = '';
+            }
+            return false;
+        };
 
-			Messaging.register("chatMessage", function (message) {
-				$scope.$apply(function () {
-					_processMessage(message, $scope.recentMessages, "playerChat");
-				});
-			});
+        function _processMessage(message, collection, container) {
+            var chatBox = document.getElementById(container);
+            collection.push(message);
+            if (collection.length > 30)
+                collection.shift();
+            setTimeout(function () {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1);
+        }
 
-			$scope.$on("$locationChangeStart", function (event) {
-				if ($scope.isRunning())
-					return;
-				var message;
-				if ($scope.starting)
-					return;
-				if ($scope.hosting()) {
-					if ($scope.players.length > 1)
-						message = 'Leaving will transfer ownership of the game to another player.  Continue?';
-					else
-						message = 'Leaving will shut down this game.  Continue?';
-				} else if ($scope.inGame()) {
-					message = 'Leaving now will remove you from this game.  Continue?';
-				} // else you are a spectator
-				if (message && !confirm(message)) {
-					event.preventDefault();
-					return;
-				}
-				Messaging.send('leave', Games.currentGame.id);
-			});
+        Messaging.register("chatMessage", function (message) {
+            $scope.$apply(function () {
+                _processMessage(message, $scope.recentMessages, "playerChat");
+            });
+        });
 
-			Messaging.register("startGame", function () {
-				$scope.$apply(function () {
-					$scope.starting = true;
-					$location.url('/play/' + Games.currentGame.id);
-				});
-			});
+        $scope.$on("$locationChangeStart", function (event) {
+            if ($scope.isRunning())
+                return;
+            var message;
+            if ($scope.starting)
+                return;
+            if ($scope.hosting()) {
+                if ($scope.players.length > 1)
+                    message = 'Leaving will transfer ownership of the game to another player.  Continue?';
+                else
+                    message = 'Leaving will shut down this game.  Continue?';
+            } else if ($scope.inGame()) {
+                message = 'Leaving now will remove you from this game.  Continue?';
+            } // else you are a spectator
+            if (message && !confirm(message)) {
+                event.preventDefault();
+                return;
+            }
+            Messaging.send('leave', Games.currentGame.id);
+        });
 
-			Messaging.register("currentGame", function (data) {
-				Games.currentGame = data;
-				if (data.players.length === 0)
-					$location.url('/');
+        Messaging.register("startGame", function () {
+            $scope.$apply(function () {
+                $scope.starting = true;
+                $location.url('/play/' + Games.currentGame.id);
+            });
+        });
 
-				$scope.$apply(function () {
-					$scope.lapCount = data.laps;
-					$scope.advancedDamage = data.advanced;
-					$scope.game = Games.currentGame;
-					$scope.players = data.players;
-					$scope.map = data.map;
+        Messaging.register("currentGame", function (data) {
+            Games.currentGame = data;
+            if (data.players.length === 0)
+                $location.url('/');
 
-					for (var i = 0; i < $scope.players.length; i++)
-						_removeCar($scope.players[i].car);
-				});
-			});
+            $scope.$apply(function () {
+                $scope.lapCount = data.laps;
+                $scope.advancedDamage = data.advanced;
+                $scope.fastMovement = data.fastMovement;
+                $scope.game = Games.currentGame;
+                $scope.players = data.players;
+                $scope.map = data.map;
 
-			function _removeCar(car) {
-				var index = $scope.cars.indexOf(car);
-				if (index >= 0)
-					$scope.cars.splice(index, 1);
-			}
+                for (var i = 0; i < $scope.players.length; i++)
+                    _removeCar($scope.players[i].car);
+            });
+        });
 
-			if ($location.url() === '/host')
-				Messaging.send("newGame");
-			else {
-				Messaging.send("join", $routeParams.game);
-			}
+        function _removeCar(car) {
+            var index = $scope.cars.indexOf(car);
+            if (index >= 0)
+                $scope.cars.splice(index, 1);
+        }
 
-			Messaging.register("updateCars", function (data) {
-				$scope.$apply(function () {
-					if (data.added) {
-						var index = $scope.cars.indexOf(data.added);
-						if (index < 0)
-							$scope.cars.push(data.added);
-					}
-					if (data.removed) {
-						_removeCar(data.removed);
-					}
-					$scope.cars.sort();
-				});
-			});
+        if ($location.url() === '/host')
+            Messaging.send("newGame");
+        else {
+            Messaging.send("join", $routeParams.game);
+        }
 
-		}
-	]);
+        Messaging.register("updateCars", function (data) {
+            console.log(data);
+            $scope.$apply(function () {
+                if (data.added) {
+                    var index = $scope.cars.indexOf(data.added);
+                    if (index < 0)
+                        $scope.cars.push(data.added);
+                }
+                if (data.removed) {
+                    _removeCar(data.removed);
+                }
+                $scope.cars.sort();
+            });
+        });
+
+    }
+]);
