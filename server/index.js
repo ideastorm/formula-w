@@ -54,5 +54,4 @@ io.on('connection', function (socket) {
 	});
 });
 
-http.listen(1618, function () {
-});
+http.listen(1618, "0.0.0.0");
