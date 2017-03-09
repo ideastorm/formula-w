@@ -52,6 +52,17 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 
 			$scope.gear = 0;
 			$scope.buildIconStyle = function (item) {
+                                function findEquivalentFor(rawTheta) {
+                                    return {
+                                        near:function(nearbyTheta) {
+                                            while (rawTheta - nearbyTheta < -180)
+                                                rawTheta+=360;
+                                            while (rawTheta -nearbyTheta > 180)
+                                                rawTheta-=360;
+                                            return rawTheta;
+                                        }
+                                    };
+                                }
 				var space;
 				if (typeof item.location === 'number') {
 					space = game.map.spaces[item.location];
@@ -69,7 +80,11 @@ angular.module('FormulaW').controller('Game', ['$scope', '$routeParams', '$locat
 					theta = 0;
 				if (item.spinout)
 					theta = theta - 180;
-				return {
+                                if (item.orientation && item.orientation !== theta) {
+                                    theta = findEquivalentFor(theta).near(item.orientation);
+                                }
+                                item.orientation = theta;
+    				return {
 					left : left + 'px',
 					top : top + 'px',
 					transform : 'rotate(' + theta + 'deg)',
