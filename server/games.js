@@ -322,7 +322,7 @@ function _banFromGame(gameId, userId) {
                 var player = game.players[index];
                 game.players.splice(index, 1);
                 if (player.isAi)
-                    players.removeAI(player.id);
+                    game.players.removeAI(player.id);
             }
             if (_onlyAisLeft(game)) {
                 _gameOver(game);
