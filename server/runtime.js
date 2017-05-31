@@ -69,7 +69,7 @@ function playerSocket(socket, io, games) {
 
     function _autoGearSelect() {
         var game = games.lookup(socket);
-        if (!game.running)
+        if (!game || !game.running)
             return;
         var player = game.players[game.activePlayer];
         var space = game.map.spaces[player.location];
